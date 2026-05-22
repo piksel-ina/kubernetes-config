@@ -23,7 +23,7 @@ spec:
             value: "https://raw.githubusercontent.com/piksel-ina/piksel-core/main/products.csv"
       container:
         name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260429-1009
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
         command: [bash, -c]
         args:
           - |
