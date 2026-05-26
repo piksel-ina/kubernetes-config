@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: odc-stac
+
+resources:
+  - ../../base/stac
+  - ingress.yaml
+
+images:
+  - name: ghcr.io/stac-utils/stac-fastapi-pgstac
+    newTag: 6.2.1
+  - name: ghcr.io/radiantearth/stac-browser
+    newTag: 4.0.1

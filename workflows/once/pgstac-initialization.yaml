@@ -1,0 +1,131 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pgstac-init-
+  name: pgstac-init
+  namespace: argo-workflows
+spec:
+  entrypoint: pgstac-initialization
+  serviceAccountName: argo-workflows-executor
+  podGC:
+    strategy: OnWorkflowSuccess
+  volumes:
+    - name: rds-ca
+      configMap:
+        name: rds-ca-cert
+  templates:
+    - name: pgstac-initialization
+      script:
+        image: ghcr.io/stac-utils/pgstac:v0.9.11
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 500m
+          limits:
+            memory: 1Gi
+            cpu: 2000m
+        command: [bash]
+        volumeMounts:
+          - name: rds-ca
+            mountPath: /tmp/rds-ca
+        source: |
+          set -e
+
+          echo "=== pgSTAC Schema Initialization ==="
+          echo "Database: $POSTGRES_DB"
+
+          export PGSSLMODE=verify-ca
+          export PGSSLROOTCERT=/tmp/rds-ca/ap-southeast-3-bundle.pem
+
+          # Validate prerequisites (TF-provisioned)
+          echo "Validating prerequisites..."
+          PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -c "SELECT 1;" > /dev/null
+
+          POSTGIS_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_extension WHERE extname='postgis';" || echo "0")
+          [ "$POSTGIS_EXISTS" != "1" ] && { echo "ERROR: PostGIS extension not found in $POSTGRES_DB. Run terraform apply first."; exit 1; }
+
+          USER_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname='$STAC_USER';" || echo "0")
+          [ "$USER_EXISTS" != "1" ] && { echo "ERROR: User $STAC_USER not found. Run terraform apply first."; exit 1; }
+
+          echo "Prerequisites validated (database, postgis, users)"
+
+          # Run pgSTAC migration
+          echo "Running pgSTAC migration..."
+          export PGHOST="$POSTGRES_HOST"
+          export PGPORT="$POSTGRES_PORT"
+          export PGUSER="$MASTER_USER"
+          export PGPASSWORD="$MASTER_PASSWORD"
+          export PGDATABASE="$POSTGRES_DB"
+
+          python -m pgstac migrate
+          echo "pgSTAC migration complete"
+
+          # Grant pgSTAC roles to TF-provisioned users
+          echo "Granting pgSTAC permissions..."
+          PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -c "
+            GRANT pgstac_admin TO \"$STAC_USER\";
+            GRANT pgstac_read TO \"$STAC_READ_USER\";
+            GRANT pgstac_ingest TO \"$STAC_USER\";
+          "
+          echo "Permissions granted"
+
+          # Verify via pgBouncer
+          echo "Testing pgBouncer connections..."
+          export PGSSLMODE=disable PGSSLROOTCERT=""
+
+          PGPASSWORD="$STAC_PASS" psql -h pg-proxy-service.database.svc.cluster.local -p 6432 -U "$STAC_USER" -d "$POSTGRES_DB" -c "SELECT count(*) FROM pgstac.collections;" || {
+            echo "WARNING: STAC user PgBouncer connection failed"
+          }
+
+          PGPASSWORD="$STAC_READ_PASS" psql -h pg-proxy-service.database.svc.cluster.local -p 6432 -U "$STAC_READ_USER" -d "$POSTGRES_DB" -c "SELECT count(*) FROM pgstac.collections;" || {
+            echo "WARNING: STAC read user PgBouncer connection failed"
+          }
+          echo "PgBouncer connections tested"
+
+          echo ""
+          echo "=== pgSTAC Initialization Complete ==="
+          echo "  PostGIS: enabled (TF)"
+          echo "  pgSTAC schema: initialized (v0.9.11)"
+          echo "  Roles: stac -> pgstac_admin+pgstac_ingest, stacread -> pgstac_read"
+          echo "  PgBouncer: pg-proxy-service.database.svc.cluster.local:6432"
+
+        env:
+          - name: POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: db_address
+          - name: POSTGRES_PORT
+            value: "5432"
+          - name: POSTGRES_DB
+            value: "stac"
+          - name: MASTER_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: username
+          - name: MASTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: password
+          - name: STAC_USER
+            valueFrom:
+              secretKeyRef:
+                name: stac
+                key: username
+          - name: STAC_PASS
+            valueFrom:
+              secretKeyRef:
+                name: stac
+                key: password
+          - name: STAC_READ_USER
+            valueFrom:
+              secretKeyRef:
+                name: stacread
+                key: username
+          - name: STAC_READ_PASS
+            valueFrom:
+              secretKeyRef:
+                name: stacread
+                key: password

@@ -4,6 +4,7 @@ metadata:
   name: stac-fastapi
   namespace: odc-stac
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: stac-fastapi
@@ -14,7 +15,7 @@ spec:
     spec:
       containers:
         - name: stac-fastapi
-          image: ghcr.io/stac-utils/stac-fastapi-pgstac:3.0.0
+          image: ghcr.io/stac-utils/stac-fastapi-pgstac:6.2.1
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -27,31 +28,69 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /_mgmt/ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /_mgmt/ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
           env:
             - name: FORWARDED_ALLOW_IPS
               value: "*"
+            - name: POSTGRES_HOST_WRITER
+              value: "pg-proxy-service.database.svc.cluster.local"
+            - name: POSTGRES_HOST_READER
+              value: "pg-proxy-service.database.svc.cluster.local"
             - name: POSTGRES_PORT
               value: "6432"
             - name: POSTGRES_DBNAME
               value: "stac"
-            - name: POSTGRES_HOST_READER
-              value: "pg-proxy-service.database.svc.cluster.local"
-            - name: POSTGRES_HOST_WRITER
-              value: "pg-proxy-service.database.svc.cluster.local"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: stac-secret
+                  key: username
+            - name: POSTGRES_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: stac-secret
+                  key: password
+            - name: POSTGRES_USER_READER
+              valueFrom:
+                secretKeyRef:
+                  name: stacread-secret
+                  key: username
+            - name: POSTGRES_PASS_READER
+              valueFrom:
+                secretKeyRef:
+                  name: stacread-secret
+                  key: password
             - name: WEB_CONCURRENCY
               value: "10"
-            - name: VSI_CACHE
-              value: "TRUE"
-            - name: GDAL_HTTP_MERGE_CONSECUTIVE_RANGES
-              value: "YES"
-            - name: GDAL_DISABLE_READDIR_ON_OPEN
-              value: "EMPTY_DIR"
             - name: DB_MIN_CONN_SIZE
               value: "1"
             - name: DB_MAX_CONN_SIZE
               value: "10"
             - name: USE_API_HYDRATE
               value: "false"
+            - name: VSI_CACHE
+              value: "TRUE"
+            - name: GDAL_HTTP_MERGE_CONSECUTIVE_RANGES
+              value: "YES"
+            - name: GDAL_DISABLE_READDIR_ON_OPEN
+              value: "EMPTY_DIR"
+            - name: AWS_DEFAULT_REGION
+              value: "ap-southeast-3"
 ---
 apiVersion: v1
 kind: Service
@@ -62,5 +101,7 @@ spec:
   selector:
     app: stac-fastapi
   ports:
-    - port: 8080
+    - port: 80
       targetPort: 8080
+      protocol: TCP
+      name: http

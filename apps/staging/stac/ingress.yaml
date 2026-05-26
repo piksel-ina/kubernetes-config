@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stac-api
+  namespace: odc-stac
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    external-dns.alpha.kubernetes.io/hostname: stac-api.staging.piksel.big.go.id
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: stac-api.staging.piksel.big.go.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: stac-fastapi
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - stac-api.staging.piksel.big.go.id
+      secretName: stac-api-ingress-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stac-browser
+  namespace: odc-stac
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    external-dns.alpha.kubernetes.io/hostname: stac.staging.piksel.big.go.id
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: stac.staging.piksel.big.go.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: stac-browser
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - stac.staging.piksel.big.go.id
+      secretName: stac-browser-ingress-tls

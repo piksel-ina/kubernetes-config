@@ -5,3 +5,4 @@ resources:
   - jupyterhub
   - datacube-explorer
   - datacube-ows
+  - stac
