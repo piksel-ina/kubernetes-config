@@ -85,7 +85,7 @@ spec:
     # Step 2 (admin, direct to RDS over SSL):
     # `--init` creates the cubedash schema (owned by odc_admin), transfers ownership,
     # and grants odc_user/odc_manage/odc_admin permissions. `--all` then generates the
-    # product summaries. After this one-time init, the daily `cubedash-operations`
+    # product summaries. After this one-time init, the daily `cubedash-refresh`
     # template can run `cubedash-gen --all` as the regular odc user via PgBouncer,
     # because odc_manage holds insert/update/delete on the cubedash schema.
     - name: cubedash-gen-init

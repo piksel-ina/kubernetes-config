@@ -144,12 +144,12 @@ spec:
               failed: true
               error: true
             templateRef:
-              name: cubedash-operations
-              template: cubedash-operations
+              name: cubedash-refresh
+              template: cubedash-refresh
             arguments:
               parameters:
                 - name: operation
-                  value: "index"
+                  value: "refresh"
 
     - name: daily-indexing
       inputs:

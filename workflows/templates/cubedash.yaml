@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: cubedash-operations
+  name: cubedash-refresh
   namespace: argo-workflows
   labels:
     app: explorer
     component: cubedash-gen
 spec:
   serviceAccountName: argo-workflows-executor
-  entrypoint: cubedash-operations
+  entrypoint: cubedash-refresh
   podGC:
     strategy: OnPodCompletion
   podMetadata:
@@ -21,9 +21,15 @@ spec:
   arguments:
     parameters:
       - name: operation
-        value: "index" # options: init, index, force-refresh
+        value: "refresh" # options: refresh, force-refresh
   templates:
-    - name: cubedash-operations
+    # Refreshes Explorer's product summaries. Runs as the odc user (member of
+    # odc_manage, which holds insert/update/delete on the cubedash schema) via
+    # the transaction-pooled odc_index alias.
+    #
+    # Schema creation is NOT handled here — it requires odc_admin membership and
+    # lives in the one-time workflows/once/cubedash-initialization.yaml.
+    - name: cubedash-refresh
       inputs:
         parameters:
           - name: operation
@@ -33,10 +39,7 @@ spec:
         source: |
           #!/bin/bash
           case "{{inputs.parameters.operation}}" in
-            "init")
-              cubedash-gen --init --all
-              ;;
-            "index")
+            "refresh")
               cubedash-gen --all
               ;;
             "force-refresh")
@@ -44,7 +47,8 @@ spec:
               ;;
             *)
               echo "Invalid operation: {{inputs.parameters.operation}}"
-              echo "Valid operations: init, index, force-refresh"
+              echo "Valid operations: refresh, force-refresh"
+              echo "(Schema init lives in workflows/once/cubedash-initialization.yaml)"
               exit 1
               ;;
           esac
