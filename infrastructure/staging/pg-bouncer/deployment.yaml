@@ -111,11 +111,11 @@ spec:
                 secretKeyRef:
                   name: db-password
                   key: password
-            # Pool sizing / mode are defined in the mounted pgbouncer.ini
-            # (ConfigMap), which is the single source of truth. The edoburu
-            # entrypoint ignores POOL_MODE / MAX_CLIENT_CONN / DEFAULT_POOL_SIZE
-            # env vars when a config file is mounted, so they are intentionally
-            # not set here to avoid contradictory, misleading values.
+          # Pool sizing / mode are defined in the mounted pgbouncer.ini
+          # (ConfigMap), which is the single source of truth. The edoburu
+          # entrypoint ignores POOL_MODE / MAX_CLIENT_CONN / DEFAULT_POOL_SIZE
+          # env vars when a config file is mounted, so they are intentionally
+          # not set here to avoid contradictory, misleading values.
           resources:
             requests:
               cpu: 100m

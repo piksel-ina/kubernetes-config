@@ -41,10 +41,16 @@ spec:
           echo "Validating prerequisites..."
           PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -c "SELECT 1;" > /dev/null
 
-          POSTGIS_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_extension WHERE extname='postgis';" || echo "0")
+          POSTGIS_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql \
+            -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+            -U "$MASTER_USER" -d "$POSTGRES_DB" \
+            -tAc "SELECT 1 FROM pg_extension WHERE extname='postgis';" || echo "0")
           [ "$POSTGIS_EXISTS" != "1" ] && { echo "ERROR: PostGIS extension not found in $POSTGRES_DB. Run terraform apply first."; exit 1; }
 
-          USER_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname='$STAC_USER';" || echo "0")
+          USER_EXISTS=$(PGPASSWORD="$MASTER_PASSWORD" psql \
+            -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+            -U "$MASTER_USER" -d "$POSTGRES_DB" \
+            -tAc "SELECT 1 FROM pg_roles WHERE rolname='$STAC_USER';" || echo "0")
           [ "$USER_EXISTS" != "1" ] && { echo "ERROR: User $STAC_USER not found. Run terraform apply first."; exit 1; }
 
           echo "Prerequisites validated (database, postgis, users)"
