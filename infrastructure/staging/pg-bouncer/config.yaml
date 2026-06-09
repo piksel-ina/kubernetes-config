@@ -6,17 +6,40 @@ metadata:
 data:
   pgbouncer.ini: |
     [databases]
+    # Workload-isolated aliases. All ODC aliases target the same physical
+    # database (dbname=odc); they differ by pool_mode + pool_size so each
+    # workload gets its own pool and cannot starve the others.
+    #
+    # NOTE: pool_size and max_db_connections are PER PgBouncer PROCESS.
+    # This Deployment runs 2 replicas, so effective backend usage is ~2x.
 
-    # JupyterHub needs session mode for notebook persistence
-    jupyterhub = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=session pool_size=300
+    # Live OGC/web serving (OWS as odcread, Explorer as odc). Transaction mode:
+    # idle app-side pool connections do not pin a backend, so a small pool
+    # multiplexes all OWS/Explorer workers.
+    odc = host=db-endpoint.database.svc.cluster.local port=5432 dbname=odc pool_mode=transaction pool_size=40
 
-    # ODC needs session mode for prepared statements and temp tables
-    odc = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=session pool_size=400
+    # Interactive notebook ODC path (Jupyter kernels). Session mode preserves
+    # session state across cells; bounded so it cannot drain the serving pool.
+    odc_interactive = host=db-endpoint.database.svc.cluster.local port=5432 dbname=odc pool_mode=session pool_size=30
 
-    # STAC needs session mode for pgSTAC ingestion (prepared statements, temp tables)
-    stac = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=session pool_size=50
+    # Argo batch indexing / maintenance. Deliberately generous so indexing runs
+    # fast by bursting into spare capacity when serving pools are idle.
+    odc_index = host=db-endpoint.database.svc.cluster.local port=5432 dbname=odc pool_mode=transaction pool_size=100
 
-    # General connection (uses transaction mode)
+    # JupyterHub hub state (single low-concurrency process).
+    jupyterhub = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=10
+
+    # STAC / pgSTAC (not yet deployed). Revisit to a bounded session pool if
+    # pypgstac bulk ingestion needs session features.
+    stac = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=10
+
+    # Argo Workflows controller persistence.
+    argo = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=20
+
+    # Grafana.
+    grafana = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=5
+
+    # Catch-all for anything not explicitly routed.
     * = host=db-endpoint.database.svc.cluster.local port=5432
 
     [pgbouncer]
@@ -25,11 +48,24 @@ data:
     auth_type = plain
     auth_file = /etc/pgbouncer/userlist.txt
 
-    # Optimized for db.t4g.large (2 vCPU, 8GB RAM)
+    # db.t4g.large (2 vCPU, 8GB). Default transaction pooling; prepared
+    # statements supported in transaction mode (PgBouncer >= 1.21).
     pool_mode = transaction
+    max_prepared_statements = 200
     max_client_conn = 2000
-    default_pool_size = 500
-    reserve_pool_size = 50
-    max_db_connections = 800
+    default_pool_size = 20
+    reserve_pool_size = 10
+    reserve_pool_timeout = 3
+
+    # Hard per-process ceiling -> ~400 backends across 2 replicas, well under
+    # the RDS max_connections (~853). Lets odc_index burst into spare capacity
+    # while protecting the backend from runaway connection growth.
+    max_db_connections = 200
+
+    # Queue briefly under burst instead of erroring; reclaim idle backends.
+    query_wait_timeout = 120
+    server_idle_timeout = 600
+    server_lifetime = 3600
+
     logfile =
     pidfile = /tmp/pgbouncer.pid

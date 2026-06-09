@@ -111,18 +111,19 @@ spec:
                 secretKeyRef:
                   name: db-password
                   key: password
-            - name: POOL_MODE
-              value: "transaction"
-            - name: MAX_CLIENT_CONN
-              value: "200"
-            - name: DEFAULT_POOL_SIZE
-              value: "20"
+            # Pool sizing / mode are defined in the mounted pgbouncer.ini
+            # (ConfigMap), which is the single source of truth. The edoburu
+            # entrypoint ignores POOL_MODE / MAX_CLIENT_CONN / DEFAULT_POOL_SIZE
+            # env vars when a config file is mounted, so they are intentionally
+            # not set here to avoid contradictory, misleading values.
           resources:
             requests:
               cpu: 100m
               memory: 128Mi
             limits:
-              cpu: 500m
+              # PgBouncer is single-threaded; a 500m limit throttles the event
+              # loop under burst (e.g. OWS HPA scale-up). Give it a full core.
+              cpu: 1000m
               memory: 512Mi
           volumeMounts:
             - name: pgbouncer-config

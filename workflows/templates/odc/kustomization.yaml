@@ -10,3 +10,4 @@ resources:
   - odc-metadata-update.yaml
   - odc-delete-product.yaml
   - odc-s3-index.yaml
+  - odc-check.yaml

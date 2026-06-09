@@ -134,7 +134,10 @@ spec:
         ODC_DEFAULT_DB_HOSTNAME: "pg-proxy-service.database.svc.cluster.local"
         ODC_DEFAULT_DB_PORT: "6432"
         ODC_DEFAULT_DB_USERNAME: "odcread"
-        ODC_DEFAULT_DB_DATABASE: "odc"
+        # Session-mode pool dedicated to interactive notebook kernels. Isolated
+        # from the OWS/Explorer serving pool (odc) so a long analysis cannot
+        # exhaust live serving, and vice versa.
+        ODC_DEFAULT_DB_DATABASE: "odc_interactive"
         ODC_DEFAULT_INDEX_DRIVER: "postgis"
 
       # set ServiceAccount to assume IAM role

@@ -18,15 +18,15 @@ spec:
   arguments:
     parameters:
       - name: s3-uri
-        value: "s3://piksel-staging-public-data/gm_s2/0.0.1/**/*.stac-item.json"
+        value: "s3://piksel-staging-public-data/geomad_s2/1.0.0/**/*.stac-item.json"
       - name: product-name
-        value: "gm_s2_annual"
+        value: "s2_geomad_annual"
       - name: aws-region
         value: "ap-southeast-3"
       - name: no-sign-request
         value: "true"
       - name: rename-product
-        value: "geomad_s2_annual"
+        value: "s2_geomad_annual"
   templates:
     - name: s3-indexing
       inputs:
@@ -83,7 +83,7 @@ spec:
                 name: odc
                 key: password
           - name: ODC_DEFAULT_DB_DATABASE
-            value: "odc"
+            value: "odc_index"
           - name: ODC_DEFAULT_INDEX_DRIVER
             value: "postgis"
         resources:

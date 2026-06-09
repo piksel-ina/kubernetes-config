@@ -1,35 +1,44 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: odc-product-sync
+  name: odc-check
   namespace: argo-workflows
 spec:
   serviceAccountName: argo-workflows-executor
-  entrypoint: product-sync
+  entrypoint: odc-check
   podGC:
     strategy: OnPodCompletion
-  podMetadata:
-    annotations:
-      karpenter.sh/do-not-disrupt: "true"
-    labels:
-      app: odc-product-sync
   ttlStrategy:
     secondsAfterCompletion: 300
+  arguments:
+    parameters:
+      - name: products
+        value: ""
   templates:
-    - name: product-sync
+    - name: odc-check
       inputs:
         parameters:
-          - name: product-list
-            value: "https://raw.githubusercontent.com/piksel-ina/piksel-core/main/products.csv"
+          - name: products
       container:
-        name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260429-1009
         command: [bash, -c]
         args:
           - |
-            datacube --version
-            dc-sync-products {{inputs.parameters.product-list}} --update-if-exists
-            datacube product list
+            if [ -z "{{inputs.parameters.products}}" ]; then
+              echo "=== All Products ==="
+              datacube product list
+              echo ""
+              echo "=== Dataset Counts ==="
+              for p in $(datacube product list --format csv 2>/dev/null | tail -n +2 | cut -d',' -f1); do
+                datacube dataset count $p
+              done
+            else
+              for p in {{inputs.parameters.products}}; do
+                datacube dataset count $p
+              done
+            fi
+            echo ""
+            datacube system check
         env:
           - name: ODC_DEFAULT_DB_HOSTNAME
             value: "pg-proxy-service.database.svc.cluster.local"
@@ -51,8 +60,8 @@ spec:
             value: "postgis"
         resources:
           requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
             memory: "1Gi"
             cpu: "500m"
-          limits:
-            memory: "4Gi"
-            cpu: "2000m"

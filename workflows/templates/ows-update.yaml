@@ -79,7 +79,7 @@ spec:
                 name: odc
                 key: password
           - name: ODC_DEFAULT_DB_DATABASE
-            value: odc
+            value: odc_index
           - name: ODC_DEFAULT_INDEX_DRIVER
             value: "postgis"
           - name: AWS_DEFAULT_REGION

@@ -28,7 +28,7 @@ spec:
         parameters:
           - name: operation
       script:
-        image: opendatacube/explorer:3.0.1
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer:v20260608-1328
         command: [bash]
         source: |
           #!/bin/bash
@@ -54,7 +54,7 @@ spec:
           - name: ODC_DEFAULT_DB_PORT
             value: "6432"
           - name: ODC_DEFAULT_DB_DATABASE
-            value: "odc"
+            value: "odc_index"
           - name: ODC_DEFAULT_DB_USERNAME
             valueFrom:
               secretKeyRef:
