@@ -22,7 +22,7 @@ spec:
   tls:
     - hosts:
         - stac-api.staging.piksel.big.go.id
-      secretName: stac-api-ingress-tls
+      secretName: stac-api-ingress-tls  # pragma: allowlist secret
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -48,4 +48,4 @@ spec:
   tls:
     - hosts:
         - stac.staging.piksel.big.go.id
-      secretName: stac-browser-ingress-tls
+      secretName: stac-browser-ingress-tls  # pragma: allowlist secret
