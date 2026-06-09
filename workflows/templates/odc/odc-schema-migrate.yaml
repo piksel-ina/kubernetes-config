@@ -30,13 +30,10 @@ spec:
         - - name: grant-roles
             template: grant-roles
 
-        - - name: update-spatial-indexes
-            template: update-spatial-indexes
-
     - name: schema-init
       container:
         name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260429-1009
         command: [bash, -c]
         args:
           - |
@@ -90,7 +87,7 @@ spec:
     - name: grant-roles
       container:
         name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260429-1009
         command: [bash, -c]
         args:
           - |
@@ -99,10 +96,27 @@ spec:
             export PGSSLROOTCERT=/tmp/rds-ca/ap-southeast-3-bundle.pem
 
             echo "=== Granting ODC roles ==="
-            datacube user grant manage odc
-            echo "✓ odc_manage granted to odc user"
-            datacube user grant user odcread
-            echo "✓ odc_user granted to odcread user"
+            # Use raw SQL instead of `datacube user grant`: the CLI swallows
+            # grant failures (contextlib.suppress + unchecked return) and can
+            # report a false success while leaving services without permissions.
+            # Master owns odc_user/odc_manage (created via system init), so on
+            # PG16+ it can grant them directly.
+            PGPASSWORD="$ODC_DEFAULT_DB_PASSWORD" psql \
+              -h "$ODC_DEFAULT_DB_HOSTNAME" -p "$ODC_DEFAULT_DB_PORT" \
+              -U "$ODC_DEFAULT_DB_USERNAME" -d "$ODC_DEFAULT_DB_DATABASE" \
+              -v ON_ERROR_STOP=1 \
+              -c "GRANT odc_manage TO odc; GRANT odc_user TO odcread;"
+
+            # Verify membership actually landed (guards against silent regression).
+            for pair in "odc:odc_manage" "odcread:odc_user"; do
+              u="${pair%%:*}"; r="${pair##*:}"
+              ok=$(PGPASSWORD="$ODC_DEFAULT_DB_PASSWORD" psql \
+                    -h "$ODC_DEFAULT_DB_HOSTNAME" -p "$ODC_DEFAULT_DB_PORT" \
+                    -U "$ODC_DEFAULT_DB_USERNAME" -d "$ODC_DEFAULT_DB_DATABASE" \
+                    -tAc "SELECT pg_has_role('$u', '$r', 'MEMBER');")
+              [ "$ok" = "t" ] || { echo "ERROR: $u is not a member of $r after grant"; exit 1; }
+              echo "✓ $r granted to $u"
+            done
         env:
           - name: ODC_DEFAULT_DB_HOSTNAME
             valueFrom:
@@ -135,54 +149,3 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "1000m"
-
-    - name: update-spatial-indexes
-      container:
-        name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
-        command: [bash, -c]
-        args:
-          - |
-            set -e
-            export PGSSLMODE=verify-ca
-            export PGSSLROOTCERT=/tmp/rds-ca/ap-southeast-3-bundle.pem
-
-            echo "Updating spatial indexes..."
-            for epsg in 4326 3857; do
-              echo "Creating/updating spatial index for EPSG:$epsg"
-              datacube spindex create $epsg || true
-              datacube spindex update $epsg
-            done
-            echo "✓ Spatial indexes updated"
-        env:
-          - name: ODC_DEFAULT_DB_HOSTNAME
-            valueFrom:
-              secretKeyRef:
-                name: db-secret
-                key: db_address
-          - name: ODC_DEFAULT_DB_PORT
-            value: "5432"
-          - name: ODC_DEFAULT_DB_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: db-secret
-                key: username
-          - name: ODC_DEFAULT_DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: db-secret
-                key: password
-          - name: ODC_DEFAULT_DB_DATABASE
-            value: "odc"
-          - name: ODC_DEFAULT_INDEX_DRIVER
-            value: "postgis"
-        volumeMounts:
-          - name: rds-ca
-            mountPath: /tmp/rds-ca
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "1000m"
-          limits:
-            memory: "4Gi"
-            cpu: "2000m"

@@ -85,25 +85,39 @@ spec:
           export ODC_DEFAULT_DB_DATABASE="$POSTGRES_DB"
           export ODC_DEFAULT_DB_USERNAME="$MASTER_USER"
           export ODC_DEFAULT_DB_PASSWORD="$MASTER_PASSWORD"
-          export ODC_CONFIG_PATH="/home/odc/.datacube.conf"
+          export ODC_CONFIG_PATH="/tmp/.datacube.conf"
 
-          envsubst < /home/odc/.datacube.conf.template > /home/odc/.datacube.conf
+          envsubst < /home/odc/.datacube.conf.template > /tmp/.datacube.conf
           datacube -v system init
           echo "✓ ODC schema initialized"
 
-          # Grant ODC roles to TF-provisioned users
-          echo "Granting ODC roles..."
-          datacube user grant manage "$ODC_USER"
-          datacube user grant user "$ODC_READ_USER"
-          echo "✓ Roles granted ($ODC_USER → odc_manage, $ODC_READ_USER → odc_user)"
-
-          # Create spatial indexes
+          # Create spatial indexes (must come BEFORE role grants so spatial tables get permissions)
           echo "Creating spatial indexes..."
           for epsg in 4326 3857; do
             datacube spindex create $epsg > /dev/null 2>&1 || true
             datacube spindex update $epsg > /dev/null 2>&1 || true
           done
           echo "✓ Spatial indexes created (4326, 3857)"
+
+          # Grant ODC roles to TF-provisioned users (after all tables exist).
+          # Master owns odc_user/odc_manage/odc_admin (it created them via
+          # `system init`), so on PG16+ it can grant them directly. We use raw
+          # SQL instead of `datacube user grant`, which swallows grant failures
+          # (contextlib.suppress + unchecked return) and can report a false
+          # success while leaving OWS without schema permissions.
+          echo "Granting ODC roles..."
+          PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+            -U "$MASTER_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
+            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\";"
+          # Verify the grants actually landed (guards against silent regressions
+          # if a future re-init or manual schema op wipes the membership).
+          for pair in "$ODC_USER:odc_manage" "$ODC_READ_USER:odc_user"; do
+            u="${pair%%:*}"; r="${pair##*:}"
+            ok=$(run_sql_check "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" \
+                  "SELECT pg_has_role('$u', '$r', 'MEMBER');")
+            [ "$ok" = "t" ] || { echo "ERROR: $u is not a member of $r after grant"; exit 1; }
+          done
+          echo "✓ Roles granted and verified ($ODC_USER → odc_manage, $ODC_READ_USER → odc_user)"
 
           # Test PgBouncer connections (no SSL for internal)
           echo "Testing PgBouncer connections..."
@@ -125,7 +139,7 @@ spec:
           export ODC_DEFAULT_DB_USERNAME="$ODC_USER"
           export ODC_DEFAULT_DB_PASSWORD="$ODC_PASS"
 
-          envsubst < /home/odc/.datacube.conf.template > /home/odc/.datacube.conf
+          envsubst < /home/odc/.datacube.conf.template > /tmp/.datacube.conf
           datacube system check
 
           echo ""
