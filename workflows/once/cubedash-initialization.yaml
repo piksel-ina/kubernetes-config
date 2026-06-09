@@ -1,0 +1,138 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cubedash-init-
+  name: cubedash-init
+  namespace: argo-workflows
+spec:
+  entrypoint: cubedash-initialization
+  serviceAccountName: argo-workflows-executor
+  podGC:
+    strategy: OnWorkflowSuccess
+  podMetadata:
+    annotations:
+      karpenter.sh/do-not-disrupt: "true"
+  volumes:
+    - name: rds-ca
+      configMap:
+        name: rds-ca-cert
+  templates:
+    # Orchestration: grant the admin role first, then build the schema/summaries.
+    - name: cubedash-initialization
+      steps:
+        - - name: grant-admin-role
+            template: grant-admin-role
+        - - name: cubedash-gen-init
+            template: cubedash-gen-init
+
+    # Step 1 (admin, direct to RDS over SSL):
+    # cubedash creates its schema with `CREATE SCHEMA cubedash AUTHORIZATION odc_admin`,
+    # which requires the connecting role to be a MEMBER of odc_admin (to SET ROLE).
+    # The master user created odc_admin during `datacube system init` (ADMIN OPTION),
+    # so it can grant the membership to itself. Idempotent and additive.
+    - name: grant-admin-role
+      script:
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        command: [bash]
+        volumeMounts:
+          - name: rds-ca
+            mountPath: /tmp/rds-ca
+        source: |
+          set -e
+
+          echo "=== Granting odc_admin to master (for cubedash schema creation) ==="
+          export PGSSLMODE=verify-ca
+          export PGSSLROOTCERT=/tmp/rds-ca/ap-southeast-3-bundle.pem
+
+          PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+            -U "$MASTER_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
+            -c "GRANT odc_admin TO \"$MASTER_USER\";"
+
+          # Verify membership actually landed (guards against silent regressions).
+          ok=$(PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+                -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc \
+                "SELECT pg_has_role('$MASTER_USER', 'odc_admin', 'MEMBER');")
+          [ "$ok" = "t" ] || { echo "ERROR: $MASTER_USER is not a member of odc_admin after grant"; exit 1; }
+          echo "✓ $MASTER_USER is a member of odc_admin"
+        env:
+          - name: POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: db_address
+          - name: POSTGRES_PORT
+            value: "5432"
+          - name: POSTGRES_DB
+            value: "odc"
+          - name: MASTER_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: username
+          - name: MASTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: password
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+          limits:
+            memory: 512Mi
+            cpu: 1000m
+
+    # Step 2 (admin, direct to RDS over SSL):
+    # `--init` creates the cubedash schema (owned by odc_admin), transfers ownership,
+    # and grants odc_user/odc_manage/odc_admin permissions. `--all` then generates the
+    # product summaries. After this one-time init, the daily `cubedash-operations`
+    # template can run `cubedash-gen --all` as the regular odc user via PgBouncer,
+    # because odc_manage holds insert/update/delete on the cubedash schema.
+    - name: cubedash-gen-init
+      script:
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer:v20260608-1328
+        command: [bash]
+        volumeMounts:
+          - name: rds-ca
+            mountPath: /tmp/rds-ca
+        source: |
+          set -e
+
+          echo "=== cubedash-gen --init --all (master, direct to RDS) ==="
+          cubedash-gen --init --all
+          echo "✓ cubedash schema initialised and summaries generated"
+        env:
+          - name: ODC_DEFAULT_DB_HOSTNAME
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: db_address
+          - name: ODC_DEFAULT_DB_PORT
+            value: "5432"
+          - name: ODC_DEFAULT_DB_DATABASE
+            value: "odc"
+          - name: ODC_DEFAULT_DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: username
+          - name: ODC_DEFAULT_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: password
+          - name: ODC_DEFAULT_INDEX_DRIVER
+            value: "postgis"
+          - name: ODC_POSTGIS_INDEX_DRIVER
+            value: "postgis"
+          - name: PGSSLMODE
+            value: "verify-ca"
+          - name: PGSSLROOTCERT
+            value: "/tmp/rds-ca/ap-southeast-3-bundle.pem"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 250m
+          limits:
+            memory: 2Gi
+            cpu: 1000m

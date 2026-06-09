@@ -7,4 +7,4 @@ resources:
 
 images:
   - name: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer
-    newTag: v20260409-1141
+    newTag: v20260608-1328
