@@ -1,0 +1,131 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: odc-ensure-grants-
+  name: odc-ensure-grants
+  namespace: argo-workflows
+# Idempotent permission-repair for ODC login users. Re-asserts the
+# login-user -> ODC-role memberships that `datacube system init` establishes:
+#   odc     -> odc_manage
+#   odcread -> odc_user
+# Safe to run any time (e.g. after a Terraform apply revokes memberships).
+# Unlike odc-schema-init this does NOT drop or re-create any schema, so it
+# never touches indexed data. Run with: argo submit -n argo-workflows \
+#   workflows/once/odc-ensure-grants.yaml
+spec:
+  entrypoint: odc-ensure-grants
+  serviceAccountName: argo-workflows-executor
+  podGC:
+    strategy: OnWorkflowSuccess
+  volumes:
+    - name: rds-ca
+      configMap:
+        name: rds-ca-cert
+  templates:
+    - name: odc-ensure-grants
+      script:
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+          limits:
+            memory: 512Mi
+            cpu: 1000m
+        command: [bash]
+        volumeMounts:
+          - name: rds-ca
+            mountPath: /tmp/rds-ca
+        source: |
+          set -e
+
+          echo "=== ODC Ensure Grants (idempotent permission repair) ==="
+          echo "Database: $POSTGRES_DB | Write user: $ODC_USER | Read user: $ODC_READ_USER"
+
+          export PGSSLMODE=verify-ca
+          export PGSSLROOTCERT=/tmp/rds-ca/ap-southeast-3-bundle.pem
+
+          run_sql_check() {
+            PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+              -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "$1"
+          }
+
+          # Validate prerequisites (TF-provisioned users + ODC roles must exist).
+          echo "Validating prerequisites..."
+          for role in "$ODC_USER" "$ODC_READ_USER" odc_user odc_manage; do
+            exists=$(run_sql_check "SELECT 1 FROM pg_roles WHERE rolname='$role';" || echo "0")
+            [ "$exists" = "1" ] || {
+              echo "ERROR: role '$role' not found. Run terraform apply / odc-schema-init first."
+              exit 1
+            }
+          done
+          echo "✓ Users and ODC roles present"
+
+          # Re-assert memberships (GRANT is idempotent; re-running is a no-op).
+          echo "Granting ODC roles..."
+          PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+            -U "$MASTER_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
+            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\";"
+
+          # Verify the grants actually landed.
+          for pair in "$ODC_USER:odc_manage" "$ODC_READ_USER:odc_user"; do
+            u="${pair%%:*}"; r="${pair##*:}"
+            ok=$(run_sql_check "SELECT pg_has_role('$u', '$r', 'MEMBER');")
+            [ "$ok" = "t" ] || { echo "ERROR: $u is not a member of $r after grant"; exit 1; }
+          done
+          echo "✓ Roles granted and verified ($ODC_USER → odc_manage, $ODC_READ_USER → odc_user)"
+
+          # Confirm both users can actually use the odc schema via PgBouncer.
+          echo "Testing PgBouncer connections..."
+          export PGSSLMODE=disable PGSSLROOTCERT=""
+          PGPASSWORD="$ODC_PASS" psql -h pg-proxy-service.database.svc.cluster.local -p 6432 \
+            -U "$ODC_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM odc.product LIMIT 1;" >/dev/null \
+            && echo "✓ $ODC_USER can read odc.product" \
+            || echo "WARNING: $ODC_USER odc.product read failed"
+          PGPASSWORD="$ODC_READ_PASS" psql -h pg-proxy-service.database.svc.cluster.local -p 6432 \
+            -U "$ODC_READ_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM odc.product LIMIT 1;" >/dev/null \
+            && echo "✓ $ODC_READ_USER can read odc.product" \
+            || echo "WARNING: $ODC_READ_USER odc.product read failed"
+
+          echo ""
+          echo "=== Ensure Grants Complete ==="
+        env:
+          - name: POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: db_address
+          - name: POSTGRES_PORT
+            value: "5432"
+          - name: POSTGRES_DB
+            value: "odc"
+          - name: MASTER_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: username
+          - name: MASTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: password
+          - name: ODC_USER
+            valueFrom:
+              secretKeyRef:
+                name: odc
+                key: username
+          - name: ODC_PASS
+            valueFrom:
+              secretKeyRef:
+                name: odc
+                key: password
+          - name: ODC_READ_USER
+            valueFrom:
+              secretKeyRef:
+                name: odcread
+                key: username
+          - name: ODC_READ_PASS
+            valueFrom:
+              secretKeyRef:
+                name: odcread
+                key: password
