@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tileserver-config
+  namespace: tileserver
+data:
+  config.json: |
+    {
+      "options": {
+        "paths": {
+          "root": "/data"
+        }
+      },
+      "data": {
+        "coastlines": {
+          "pmtiles": "https://dep-public-staging.s3.us-west-2.amazonaws.com/dep_ls_coastlines/processed/0.8.4dev4/dep_ls_coastlines_0.8.4dev4.pmtiles"
+        }
+      }
+    }

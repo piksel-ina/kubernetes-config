@@ -89,6 +89,22 @@ spec:
   wait: true
   timeout: 5m0s
 ---
+# Tileserver
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
+kind: Kustomization
+metadata:
+  name: tileserver
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/staging/tileserver
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
 # the-workflows
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization

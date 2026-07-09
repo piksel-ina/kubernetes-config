@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tileserver
+  namespace: tileserver
+  labels:
+    app: tileserver
+spec:
+  type: ClusterIP
+  selector:
+    app: tileserver
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
