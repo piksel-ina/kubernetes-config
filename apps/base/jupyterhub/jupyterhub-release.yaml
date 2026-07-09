@@ -210,8 +210,14 @@ spec:
       service:
         type: ClusterIP
 
-    # Culling Configuration
     cull:
       enabled: true
-      timeout: 3600 # 1 hour idle timeout
-      every: 600 # Check every 10 minutes
+      timeout: 7200
+      every: 600
+      maxAge: 604800
+
+    prePuller:
+      hook:
+        enabled: false
+      continuous:
+        enabled: false
