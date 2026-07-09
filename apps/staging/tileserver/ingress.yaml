@@ -27,4 +27,4 @@ spec:
   tls:
     - hosts:
         - tiles.staging.piksel.big.go.id
-      secretName: tileserver
+      secretName: tileserver  # pragma: allowlist secret
