@@ -15,4 +15,4 @@ spec:
     arguments:
       parameters:
         - name: days-back
-          value: "5"
+          value: "21"
