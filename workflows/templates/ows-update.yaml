@@ -15,7 +15,7 @@ spec:
   arguments:
     parameters:
       - name: products
-        value: "geomad_s2_annual"
+        value: "s2_geomad_annual"
       - name: ows-image
         value: "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20260518-1130"
 
