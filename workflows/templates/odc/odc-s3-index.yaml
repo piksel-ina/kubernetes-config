@@ -17,6 +17,7 @@ spec:
       app: odc-s3-indexer
   arguments:
     parameters:
+      # filter by year: **/*2020--P1Y.stac-item.json
       - name: s3-uri
         value: "s3://piksel-staging-public-data/geomad_s2/1.0.0/**/*.stac-item.json"
       - name: product-name
