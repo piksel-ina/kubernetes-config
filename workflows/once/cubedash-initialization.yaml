@@ -90,7 +90,7 @@ spec:
     # because odc_manage holds insert/update/delete on the cubedash schema.
     - name: cubedash-gen-init
       script:
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer:v20260608-1328
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer:v20260721-1356
         command: [bash]
         volumeMounts:
           - name: rds-ca
