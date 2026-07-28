@@ -1,65 +1,51 @@
 # AGENTS.md
 
-## Repo purpose
+Flux GitOps repo for the Piksel staging Kubernetes cluster. Flux reconciles this
+repo automatically; edit manifests here rather than applying to the cluster directly.
 
-Flux GitOps repository for Kubernetes cluster config (currently `staging` only). Flux watches this repo and reconciles changes automatically.
+## Commands
 
-## Directory layout
+| Task | Command | Notes |
+|------|---------|-------|
+| Install lint hooks (once/clone) | `pre-commit install` | not auto-installed; without it commits skip the checks |
+| Lint all files | `pre-commit run --all-files` | check-yaml/json, large-files, mixed-line-ending, detect-secrets |
+| Validate an overlay renders | `kustomize build apps/staging/<app>` | the real local check before pushing |
+| Security scan | `checkov --framework kubernetes --directory . --skip-check CKV_K8S_21 --soft-fail` | CI job; soft-fail, non-blocking |
+| Run a workflow | `argo submit --from workflowtemplate/<name> -n argo-workflows --serviceaccount argo-workflows-executor` | see `workflows/templates/README.md` |
 
-- `clusters/staging/` — Flux Kustomization resources (the reconciliation entrypoints). Order: `flux-system/ → infra-configs → infra-addons → apps → workflows`
-- `infrastructure/staging/configs/` — cluster-level configs (issuers, storage classes, DB init jobs, notifications)
-- `infrastructure/staging/pg-bouncer/` — infra addons (remaining non-TF addon)
-- `infrastructure/controllers/` — static controller manifests (cert-manager, ingress-nginx, nvidia, metrics-server). **Note:** these are referenced but deployment has been migrated to Terraform (`terraform-iac/cluster-addons/`)
-- `apps/base/<app>/` — shared app definitions (HelmRepository, HelmRelease, base configs)
-- `apps/staging/<app>/` — environment-specific overlays (patches, ingress, values)
-- `workflows/templates/` — Argo WorkflowTemplates (STAC indexing, OWS updates, etc.)
-- `workflows/cronwf/` — scheduled Argo CronWorkflows
-- `workflows/once/` — one-off Argo Workflow manifests
-- `testing/` — ad-hoc test manifests
+## Setup & gotchas
 
-## Validation & CI
+- **`infrastructure/controllers/` is reference-only.** Those addons (cert-manager,
+  ingress-nginx, nvidia, metrics-server) are deployed by Terraform
+  (`terraform-iac/cluster-addons/`), not Flux — editing them here does nothing.
+- **`apps/staging/kustomization.yaml` is not reconciled by Flux.** Flux uses the
+  per-app Kustomizations in `clusters/staging/apps.yaml` instead.
+- **CI flux-validation is a no-op.** `ci.yaml` calls `flux check --kustomization-file`
+  (a flag absent in current flux) and swallows the error, so the job always passes.
+  Don't trust it for correctness — validate with `kustomize build` locally.
+- **detect-secrets:** many flagged entries are templated refs (`secretKeyRef`), not
+  real secrets. Re-run the hook to sync `.secrets.baseline`; never inline a secret.
 
-CI runs three jobs on push/PR to `main` (`.github/workflows/ci.yaml`):
+## Conventions
 
-1. **pre-commit** — runs `.pre-commit-config.yaml` hooks (trailing whitespace, YAML lint, detect-secrets with `.secrets.baseline`)
-2. **checkov** — `checkov --framework kubernetes` with `--soft-fail` and `--skip-check CKV_K8S_21` (CPU limits)
-3. **flux-validation** — `flux check --kustomization-file` on every Flux Kustomization YAML
+- **Flux Kustomization names ≠ overlay directory names.** In `clusters/staging/apps.yaml`:
+  `jhub`→`jupyterhub`, `explorer`→`datacube-explorer`, `ows`→`datacube-ows`,
+  `argo-workflows`→`argo`. Others match.
+- **base/overlay:** `apps/base/<app>/` holds shared manifests; `apps/staging/<app>/`
+  patches image tags, ingress, and env-specific config.
+- **Reconcile order** (`apps.yaml` `dependsOn`): `infra-configs` → `infra-addons`;
+  most apps depend on `infra-configs`; `workflows-templates` and `cron-jobs` depend
+  on `argo-workflows`. `terria` and `tileserver` have no `dependsOn` (deploy immediately).
 
-To run locally before pushing:
+## Project map
 
-```bash
-pre-commit run --all-files
-```
+- `clusters/staging/` — Flux reconciliation entrypoints (`apps.yaml`, `infrastructures.yaml`, `flux-system/`)
+- `apps/base/<app>/`, `apps/staging/<app>/` — app definitions + staging overlays
+- `infrastructure/staging/` — cluster configs (issuers, DB init, notifications) + pg-bouncer
+- `workflows/{templates,cronwf,once}/` — Argo WorkflowTemplates, CronWorkflows, one-off jobs
+- Golden sample: `apps/staging/tileserver/` — small, complete overlay (uses `configMapGenerator`)
 
-## YAML conventions
+## Boundaries
 
-- 2-space indentation, max line length 200
-- `document-start` rule is disabled
-- Flux-generated files are yamllint-ignored: `gotk-*.yaml`, `*-gotk.yaml`, `templates.yaml`, `flux-system/`
-- Multi-document YAML allowed (`--allow-multiple-documents` in check-yaml)
-
-## Secrets handling
-
-- `detect-secrets` with baseline `.secrets.baseline` runs in pre-commit and CI
-- `.env` is gitignored and excluded from detect-secrets scanning
-- Many flagged entries are templated references (`secretKeyRef`, etc.) — verify before marking as false positives
-
-## Flux Kustomization dependency chain
-
-All apps depend on `infra-configs`. Workflows depend on `argo-workflows`:
-
-```
-flux-system → infra-configs → infra-addons (pg-bouncer)
-                           → jupyterhub, argo, explorer, ows, monitoring, terria
-                                          argo-workflows → workflow-templates, cron-jobs
-```
-
-## Argo Workflows
-
-Submitted via `argo submit` with `--from workflowtemplate/<name>` in namespace `argo-workflows` with serviceaccount `argo-workflows-executor`. See `workflows/templates/README.md` for example commands.
-
-## Gotchas
-
-- `infrastructure/controllers/` manifests exist in repo but deployment is managed by Terraform — do not edit expecting Flux reconciliation
-- `apps/staging/kustomization.yaml` lists resources but Flux uses per-app Kustomizations in `clusters/staging/apps.yaml` instead (the kustomization.yaml is not directly reconciled by Flux)
-- `_task/` is gitignored; used for local task notes
+- Never `kubectl apply`, edit cluster state, or run direct DB operations — changes
+  flow through Flux, or Argo/Terraform for DB and addons.
