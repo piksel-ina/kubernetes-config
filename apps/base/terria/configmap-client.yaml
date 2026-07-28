@@ -334,6 +334,33 @@ data:
                   }
                 }
               ]
+            },
+            {
+              "type": "wmts",
+              "isGeoServer": "false",
+              "name": "Indonesia Coastlines",
+              "url": "https://tiles.staging.piksel.big.go.id/styles/coastlines/wmts.xml",
+              "description": "The Piksel (Digital Earth Indonesia) coastlines product is a representation of annual shoreline positions. It estimates the edge of water location at near mean tide level within each year. The years of available data vary based on the availability of source Landsat satellite imagery within a particular location. The coastlines product can be useful for monitoring patterns of movement in annual shoreline locations and determining the velocity and direction of any changes. The product does not attempt to determine causal factors for any observed changes. It may be used in combination with local observations and knowledge, or other external information to better understand possible causes and effects.",
+              "layer": "coastlines-256",
+              "style": "default",
+              "tileErrorHandlingOptions": {
+                "thresholdBeforeDisablingItem": 20,
+                "ignoreUnknownTileErrors": true
+              },
+              "availableStyles": [
+                {
+                  "layerName": "coastlines-256",
+                  "styles": [
+                    {
+                      "identifier": "default",
+                      "isDefault": "true",
+                      "legend": {
+                        "url": "https://raw.githubusercontent.com/digitalearthpacific/dep-coastlines/main/docs/DEP_Coastlines_legend.png"
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
