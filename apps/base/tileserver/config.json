@@ -1,0 +1,23 @@
+{
+  "options": {
+    "paths": { "root": "/config" },
+    "formatQuality": { "jpeg": 80, "webp": 90 },
+    "maxScaleFactor": 3,
+    "maxSize": 2048,
+    "pbfAlias": "pbf",
+    "serveAllFonts": false,
+    "serveAllStyles": false,
+    "serveStaticMaps": true,
+    "allowRemoteMarkerIcons": true,
+    "allowInlineMarkerImages": true,
+    "tileMargin": 0
+  },
+  "styles": {
+    "coastlines": { "style": "styles.json" }
+  },
+  "data": {
+    "coastlines": {
+      "pmtiles": "https://piksel-staging-public-data.s3.ap-southeast-3.amazonaws.com/ls_coastlines/coastlines_0.0.5.Java-Island-V3.pmtiles"
+    }
+  }
+}

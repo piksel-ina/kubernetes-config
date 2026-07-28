@@ -4,6 +4,11 @@ kind: Kustomization
 namespace: tileserver
 
 resources:
-  - configmap.yaml
   - deployment.yaml
   - service.yaml
+
+configMapGenerator:
+  - name: tileserver-config
+    files:
+      - config.json
+      - styles.json
