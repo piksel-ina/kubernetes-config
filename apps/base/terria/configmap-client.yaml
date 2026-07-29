@@ -333,15 +333,23 @@ data:
                   }
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "coastal-product-group",
+          "type": "group",
+          "name": "Coastal Product",
+          "members": [
             {
+              "id": "coastlines",
               "type": "wmts",
-              "isGeoServer": "false",
               "name": "Indonesia Coastlines",
               "url": "https://tiles.staging.piksel.big.go.id/styles/coastlines/wmts.xml",
               "description": "The Piksel (Digital Earth Indonesia) coastlines product is a representation of annual shoreline positions. It estimates the edge of water location at near mean tide level within each year. The years of available data vary based on the availability of source Landsat satellite imagery within a particular location. The coastlines product can be useful for monitoring patterns of movement in annual shoreline locations and determining the velocity and direction of any changes. The product does not attempt to determine causal factors for any observed changes. It may be used in combination with local observations and knowledge, or other external information to better understand possible causes and effects.",
               "layer": "coastlines-256",
               "style": "default",
+              "isGeoServer": "false",
               "tileErrorHandlingOptions": {
                 "thresholdBeforeDisablingItem": 20,
                 "ignoreUnknownTileErrors": true
@@ -360,6 +368,60 @@ data:
                   ]
                 }
               ]
+            }
+          ]
+        },
+        {
+          "id": "disaster-group",
+          "type": "group",
+          "name": "Disaster",
+          "members": [
+            {
+              "id": "flood-hazard-2025",
+              "type": "wms",
+              "name": "Bahaya Banjir 2025 (Flood Hazard)",
+              "url": "https://ows.staging.piksel.big.go.id/wms",
+              "layers": "flood_hazard_rp10",
+              "opacity": 0.8,
+              "description": "Flood hazard scenarios for 2025, derived from a Modified Geomorphic Flood Index over FABDEM v1.2 terrain with BMKG design rainfall. Use the Return Period dropdown to switch between scenarios, and the Style selector for hazard class, flood depth (metres) or the underlying hazard index. Prototype release covering selected regions of Java only - areas outside the modelled regions carry no data rather than zero hazard.",
+              "modelDimensions": [
+                {
+                  "id": "return-period",
+                  "name": "Return Period",
+                  "selectedId": "rp10",
+                  "options": [
+                    {
+                      "id": "rp02",
+                      "name": "1 in 2 years (50% AEP)",
+                      "value": { "layers": "flood_hazard_rp02" }
+                    },
+                    {
+                      "id": "rp05",
+                      "name": "1 in 5 years (20% AEP)",
+                      "value": { "layers": "flood_hazard_rp05" }
+                    },
+                    {
+                      "id": "rp10",
+                      "name": "1 in 10 years (10% AEP)",
+                      "value": { "layers": "flood_hazard_rp10" }
+                    },
+                    {
+                      "id": "rp25",
+                      "name": "1 in 25 years (4% AEP)",
+                      "value": { "layers": "flood_hazard_rp25" }
+                    },
+                    {
+                      "id": "rp50",
+                      "name": "1 in 50 years (2% AEP)",
+                      "value": { "layers": "flood_hazard_rp50" }
+                    }
+                  ]
+                }
+              ],
+              "tileErrorHandlingOptions": {
+                "thresholdBeforeDisablingItem": 20,
+                "ignoreUnknownTileErrors": true
+              }
             }
           ]
         }
