@@ -17,7 +17,7 @@ spec:
       - name: products
         value: "s2_geomad_annual_spectral"
       - name: ows-image
-        value: "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20260729-0850"
+        value: "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20260729-1037"
 
   templates:
     - name: ows-update
