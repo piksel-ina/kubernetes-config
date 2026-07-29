@@ -1,0 +1,117 @@
+# Flood Hazard (Bahaya Banjir 2025) Workflows
+# One product per return period, single 2025 epoch, one dataset each.
+---
+# Flood Hazard - 2 year return period
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: flood-hazard-rp02-index-
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflows-executor
+  workflowTemplateRef:
+    name: odc-s3-indexer
+  arguments:
+    parameters:
+      - name: s3-uri
+        value: "s3://piksel-staging-public-data/flood_hazard_rp02/1.0.0/**/*.stac-item.json"
+      - name: product-name
+        value: "flood_hazard_rp02"
+      - name: rename-product
+        value: "flood_hazard_rp02"
+      - name: aws-region
+        value: "ap-southeast-3"
+      - name: no-sign-request
+        value: "true"
+---
+# Flood Hazard - 5 year return period
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: flood-hazard-rp05-index-
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflows-executor
+  workflowTemplateRef:
+    name: odc-s3-indexer
+  arguments:
+    parameters:
+      - name: s3-uri
+        value: "s3://piksel-staging-public-data/flood_hazard_rp05/1.0.0/**/*.stac-item.json"
+      - name: product-name
+        value: "flood_hazard_rp05"
+      - name: rename-product
+        value: "flood_hazard_rp05"
+      - name: aws-region
+        value: "ap-southeast-3"
+      - name: no-sign-request
+        value: "true"
+---
+# Flood Hazard - 10 year return period
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: flood-hazard-rp10-index-
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflows-executor
+  workflowTemplateRef:
+    name: odc-s3-indexer
+  arguments:
+    parameters:
+      - name: s3-uri
+        value: "s3://piksel-staging-public-data/flood_hazard_rp10/1.0.0/**/*.stac-item.json"
+      - name: product-name
+        value: "flood_hazard_rp10"
+      - name: rename-product
+        value: "flood_hazard_rp10"
+      - name: aws-region
+        value: "ap-southeast-3"
+      - name: no-sign-request
+        value: "true"
+---
+# Flood Hazard - 25 year return period
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: flood-hazard-rp25-index-
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflows-executor
+  workflowTemplateRef:
+    name: odc-s3-indexer
+  arguments:
+    parameters:
+      - name: s3-uri
+        value: "s3://piksel-staging-public-data/flood_hazard_rp25/1.0.0/**/*.stac-item.json"
+      - name: product-name
+        value: "flood_hazard_rp25"
+      - name: rename-product
+        value: "flood_hazard_rp25"
+      - name: aws-region
+        value: "ap-southeast-3"
+      - name: no-sign-request
+        value: "true"
+---
+# Flood Hazard - 50 year return period
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: flood-hazard-rp50-index-
+  namespace: argo-workflows
+spec:
+  serviceAccountName: argo-workflows-executor
+  workflowTemplateRef:
+    name: odc-s3-indexer
+  arguments:
+    parameters:
+      - name: s3-uri
+        value: "s3://piksel-staging-public-data/flood_hazard_rp50/1.0.0/**/*.stac-item.json"
+      - name: product-name
+        value: "flood_hazard_rp50"
+      - name: rename-product
+        value: "flood_hazard_rp50"
+      - name: aws-region
+        value: "ap-southeast-3"
+      - name: no-sign-request
+        value: "true"
