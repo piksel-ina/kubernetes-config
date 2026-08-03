@@ -215,56 +215,6 @@ data:
       },
       "catalog": [
         {
-          "id": "aB3dE4FgHi",
-          "type": "group",
-          "name": "Data Global",
-          "members": [
-            {
-              "id": "QwErTyUiOp",
-              "type": "group",
-              "name": "Sentinel-2 cloudless world",
-              "members": [
-                {
-                  "id": "lIvVnuKJA9",
-                  "name": "Sentinel-2 cloudless world 2016",
-                  "type": "wmts",
-                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
-                  "layer": "s2cloudless_3857",
-                  "style": "default",
-                  "opacity": 1
-                },
-                {
-                  "id": "jCJmccfll6",
-                  "name": "Sentinel-2 cloudless world 2018",
-                  "type": "wmts",
-                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
-                  "layer": "s2cloudless-2018_3857",
-                  "style": "default",
-                  "opacity": 1
-                },
-                {
-                  "id": "HrWLyyyo6V",
-                  "name": "Sentinel-2 cloudless world 2019",
-                  "type": "wmts",
-                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
-                  "layer": "s2cloudless-2019_3857",
-                  "style": "default",
-                  "opacity": 1
-                },
-                {
-                  "id": "B8gpm2I3gB",
-                  "name": "Sentinel-2 cloudless world 2020",
-                  "type": "wmts",
-                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
-                  "layer": "s2cloudless-2020_3857",
-                  "style": "default",
-                  "opacity": 1
-                }
-              ]
-            }
-          ]
-        },
-        {
           "id": "surface-reflectance-group",
           "type": "group",
           "name": "Data Satelit Optik",
@@ -401,6 +351,104 @@ data:
                         "thresholdBeforeDisablingItem": 20,
                         "ignoreUnknownTileErrors": true
                       }
+                    }
+                  ]
+                },
+                {
+                  "id": "QwErTyUiOp",
+                  "type": "group",
+                  "name": "Mosaik Global Sentinel-2",
+                  "description": "Mosaik citra Sentinel-2 tahunan bebas awan untuk seluruh dunia dari EOX, cocok sebagai citra latar atau pratinjau. Untuk mengoptimalkan kecepatan pemuatan, mosaik ini tidak menyertakan nilai kanal spektral, sehingga produk ini tidak dapat dipakai untuk analisis.",
+                  "members": [
+                    {
+                      "id": "s2cloudless-2025",
+                      "name": "Mosaik Sentinel-2 2025 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2025_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "s2cloudless-2024",
+                      "name": "Mosaik Sentinel-2 2024 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2024_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "s2cloudless-2023",
+                      "name": "Mosaik Sentinel-2 2023 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2023_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "s2cloudless-2022",
+                      "name": "Mosaik Sentinel-2 2022 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2022_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "s2cloudless-2021",
+                      "name": "Mosaik Sentinel-2 2021 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2021_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "B8gpm2I3gB",
+                      "name": "Mosaik Sentinel-2 2020 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2020_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "HrWLyyyo6V",
+                      "name": "Mosaik Sentinel-2 2019 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2019_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "jCJmccfll6",
+                      "name": "Mosaik Sentinel-2 2018 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2018_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "s2cloudless-2017",
+                      "name": "Mosaik Sentinel-2 2017 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless-2017_3857",
+                      "style": "default",
+                      "opacity": 1
+                    },
+                    {
+                      "id": "lIvVnuKJA9",
+                      "name": "Mosaik Sentinel-2 2016 (Pratinjau)",
+                      "type": "wmts",
+                      "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                      "layer": "s2cloudless_3857",
+                      "style": "default",
+                      "opacity": 1
                     }
                   ]
                 }
