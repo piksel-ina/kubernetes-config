@@ -1,0 +1,17 @@
+{
+  "port": 3001,
+  "allowProxyFor": [
+    "githubusercontent.com"
+  ],
+  "initPaths": [
+    "/etc/terria-config/client"
+  ],
+  "shareUrlPrefixes": {
+    "s": {
+      "service": "s3",
+      "region": "ap-southeast-3",
+      "bucket": "piksel-staging-terria-bucket"
+    }
+  },
+  "newShareUrlPrefix": "s"
+}

@@ -54,6 +54,9 @@ spec:
               subPath: simple.json
             - name: terria-server-config
               mountPath: /etc/terria-config/server
+            - name: terria-basemaps
+              mountPath: /app/wwwroot/images/basemaps
+              readOnly: true
           resources:
             requests:
               cpu: "1.5"
@@ -84,6 +87,9 @@ spec:
         - name: terria-server-config
           configMap:
             name: terria-server-config
+        - name: terria-basemaps
+          configMap:
+            name: terria-basemaps
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

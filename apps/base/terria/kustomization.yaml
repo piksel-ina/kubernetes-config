@@ -4,8 +4,30 @@ kind: Kustomization
 namespace: terria
 
 resources:
-  - configmap-client.yaml
-  - configmap-server.yaml
   - deployment.yaml
   - service.yaml
   - hpa-pdb.yaml
+
+configMapGenerator:
+  - name: terria-client-config
+    options:
+      labels:
+        app: terria
+    files:
+      - config.json
+      - simple.json
+  - name: terria-server-config
+    options:
+      labels:
+        app: terria
+    files:
+      - serverconfig.json
+  - name: terria-basemaps
+    options:
+      labels:
+        app: terria
+    files:
+      - basemaps/indo-carto.png
+      - basemaps/indo-osm.png
+      - basemaps/indo-esri.png
+      - basemaps/indo-rbi.png
