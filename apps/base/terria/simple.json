@@ -19,27 +19,35 @@
           "description": "Citra multispektral yang diakses langsung dari arsip publik Sentinel-2 dan USGS Landsat di Oregon, Amerika Serikat. Daftar citra terbaru diperbarui setiap hari saat data baru tersedia. Pemuatan awal mungkin membutuhkan waktu lebih lama karena data dibaca langsung dari arsip publik.",
           "members": [
             {
-              "id": "s2-l2a",
-              "name": "Sentinel-2 (2017-sekarang)",
-              "type": "wms",
-              "url": "https://ows.staging.piksel.big.go.id/wms",
-              "layers": "s2_l2a",
-              "opacity": 0.8,
-              "description": "Citra Sentinel-2 Level-2A yang telah dikoreksi atmosfer, dengan resolusi spasial hingga 10 meter. Sentinel-2 umumnya melintasi wilayah yang sama setiap 5 hari.",
-              "tileErrorHandlingOptions": {
-                "thresholdBeforeDisablingItem": 20,
-                "ignoreUnknownTileErrors": true
-              }
+              "id": "sentinel-2-surface-reflectance",
+              "type": "group",
+              "name": "Sentinel-2 SR L2A",
+              "description": "Arsip citra Sentinel-2 Level-2A yang sudah dikoreksi atmosfer, dari dua satelit kembar Sentinel-2A dan Sentinel-2B. Keduanya mengorbit pada lintasan yang sama dengan selisih setengah putaran, sehingga satu wilayah dapat terekam setiap lima hari. Resolusi spasial hingga 10 meter.",
+              "members": [
+                {
+                  "id": "s2-l2a",
+                  "name": "Sentinel-2 SR L2A (2017–sekarang)",
+                  "type": "wms",
+                  "url": "https://ows.staging.piksel.big.go.id/wms",
+                  "layers": "s2_l2a",
+                  "opacity": 0.8,
+                  "description": "Citra Sentinel-2 Level-2A yang telah dikoreksi atmosfer, dengan resolusi spasial hingga 10 meter. Sentinel-2 umumnya melintasi wilayah yang sama setiap 5 hari.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                }
+              ]
             },
             {
               "id": "landsat-surface-reflectance",
               "type": "group",
-              "name": "Landsat",
+              "name": "Landsat SR C2L2",
               "description": "Arsip citra Landsat Collection 2 Level-2 dari USGS dengan resolusi spasial 30 meter. Landsat 5 menyediakan arsip terlama (1986-2011); Landsat 7 melanjutkan rekaman hingga 2024; sedangkan Landsat 8 (sejak 2013) dan Landsat 9 (sejak 2021) menyediakan pengamatan terkini dengan sensor generasi lebih baru. Setiap satelit Landsat umumnya melintasi wilayah yang sama setiap 16 hari. Landsat 8 dan 9 dikonfigurasi untuk menggunakan jalur lintasan yang sama dengan selisih 8 hari, sehingga bila digunakan bersamaan, wilayah yang sama dapat terekam setiap 8 hari.",
               "members": [
                 {
                   "id": "landsat-9-surface-reflectance",
-                  "name": "Landsat 9 (2021-sekarang)",
+                  "name": "Landsat 9 SR C2L2 (2021–sekarang)",
                   "type": "wms",
                   "url": "https://ows.staging.piksel.big.go.id/wms",
                   "layers": "ls9_c2l2_sr",
@@ -52,7 +60,7 @@
                 },
                 {
                   "id": "landsat-8-surface-reflectance",
-                  "name": "Landsat 8 (2013-sekarang)",
+                  "name": "Landsat 8 SR C2L2 (2013–sekarang)",
                   "type": "wms",
                   "url": "https://ows.staging.piksel.big.go.id/wms",
                   "layers": "ls8_c2l2_sr",
@@ -65,7 +73,7 @@
                 },
                 {
                   "id": "landsat-7-surface-reflectance",
-                  "name": "Landsat 7 (1999-2024)",
+                  "name": "Landsat 7 SR C2L2 (1999–2024)",
                   "type": "wms",
                   "url": "https://ows.staging.piksel.big.go.id/wms",
                   "layers": "ls7_c2l2_sr",
@@ -78,7 +86,7 @@
                 },
                 {
                   "id": "landsat-5-surface-reflectance",
-                  "name": "Landsat 5 (1986-2011)",
+                  "name": "Landsat 5 SR C2L2 (1986–2011)",
                   "type": "wms",
                   "url": "https://ows.staging.piksel.big.go.id/wms",
                   "layers": "ls5_c2l2_sr",
