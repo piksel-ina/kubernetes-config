@@ -124,7 +124,8 @@
                   "tileErrorHandlingOptions": {
                     "thresholdBeforeDisablingItem": 20,
                     "ignoreUnknownTileErrors": true
-                  }
+                  },
+                  "dateFormat": "UTC:yyyy"
                 },
                 {
                   "id": "s2-geomad-indices",
@@ -137,7 +138,8 @@
                   "tileErrorHandlingOptions": {
                     "thresholdBeforeDisablingItem": 20,
                     "ignoreUnknownTileErrors": true
-                  }
+                  },
+                  "dateFormat": "UTC:yyyy"
                 },
                 {
                   "id": "s2-geomad-statistics",
@@ -150,7 +152,8 @@
                   "tileErrorHandlingOptions": {
                     "thresholdBeforeDisablingItem": 20,
                     "ignoreUnknownTileErrors": true
-                  }
+                  },
+                  "dateFormat": "UTC:yyyy"
                 }
               ]
             },
