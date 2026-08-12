@@ -1,0 +1,14 @@
+---
+# Notification Provider for FluxCD notifications on the production cluster.
+# Requires a secret `slack-webhook-prod` (key: address) in the flux-system
+# namespace holding the Slack incoming-webhook URL.
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: slack-prod
+  namespace: flux-system
+spec:
+  type: slack
+  channel: flux-piksel-prod-env
+  secretRef:
+    name: slack-webhook-prod

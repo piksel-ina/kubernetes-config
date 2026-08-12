@@ -1,0 +1,37 @@
+# --- Infrastructure configurations (rds-ca-cert + notifications) ---
+# Note: cert-manager, ingress-nginx, metrics-server, cluster-issuers, storage-class,
+# efs-csi, and db users/endpoint are managed by Terraform (terraform-iac/).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-configs
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/production/configs
+  prune: true
+  wait: true
+---
+# --- Addons (pg-bouncer only) ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-addons
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-configs
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/production/pg-bouncer
+  prune: true
+  wait: true
