@@ -1,0 +1,121 @@
+# --- Applications Kustomizations for the production cluster ---
+# jupyterhub
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: jhub
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/jupyterhub
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# argo-workflows
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: argo-workflows
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/argo
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# Datacube Explorer
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: explorer
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/datacube-explorer
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# OWS
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ows
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/datacube-ows
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# Terria
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: terria
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/terria
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# Tileserver
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: tileserver
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/tileserver
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
+# Monitoring
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: monitoring
+  namespace: flux-system
+spec:
+  interval: 10m
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/production/monitoring
+  prune: true
+  timeout: 5m0s

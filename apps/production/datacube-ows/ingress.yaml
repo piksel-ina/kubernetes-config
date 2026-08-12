@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: datacube-ows
+  namespace: open-datacube
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    external-dns.alpha.kubernetes.io/hostname: ows-uncached.piksel.big.go.id
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "false"
+    nginx.ingress.kubernetes.io/compute-full-forwarded-for: "false"
+    nginx.ingress.kubernetes.io/preserve-host: "false"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($request_uri = "/healthz") {
+        return 200 "ok\n";
+      }
+      proxy_set_header Host $http_x_public_host;
+      proxy_set_header X-Forwarded-Host $http_x_public_host;
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ows-uncached.piksel.big.go.id
+      http:
+        paths:
+          - path: /healthz
+            pathType: Exact
+            backend:
+              service:
+                name: datacube-ows-svc
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: datacube-ows-svc
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - ows-uncached.piksel.big.go.id
+      secretName: ows-ingress-tls-production

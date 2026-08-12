@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pre-spawn-hook
+  namespace: jupyterhub
+data:
+  mount-efs.py: |
+    async def pre_spawn_hook(spawner):
+        """Configure EFS volumes based on user groups before pod creation"""
+        import logging
+
+        log = logging.getLogger(__name__)
+        log.info(f"Pre-spawn hook for user: {spawner.user.name}")
+
+        try:
+            # Get user groups from auth state
+            auth_state = await spawner.user.get_auth_state()
+            user_groups = []
+
+            if auth_state:
+                if 'oauth_user' in auth_state:
+                    cognito_info = auth_state['oauth_user']
+                    user_groups = cognito_info.get('cognito:groups', [])
+                elif 'cognito:groups' in auth_state:
+                    user_groups = auth_state['cognito:groups']
+
+            if not user_groups:
+                log.warning(f"No groups found for user {spawner.user.name}")
+            log.info(f"User {spawner.user.name} groups: {user_groups}")
+
+            # Configure EFS volumes based on groups
+            volumes = []
+            volume_mounts = []
+
+            # Base public data
+            public_volume = {
+                "name": "efs-public-data",
+                "persistentVolumeClaim": {"claimName": "efs-public-data"}
+            }
+
+            # Public data mount
+            if 'admin' in user_groups:
+                public_mount = {
+                    "name": "efs-public-data",
+                    "mountPath": "/home/jovyan/data/public",
+                    "readOnly": False  # Admin gets read-write access
+                }
+            else:
+                public_mount = {
+                    "name": "efs-public-data",
+                    "mountPath": "/home/jovyan/data/public",
+                    "readOnly": True   # Everyone else gets read-only
+                }
+
+            # Base coastline data
+            coastline_volume = {
+                "name": "efs-coastline-data",
+                "persistentVolumeClaim": {"claimName": "efs-coastline-data"}
+            }
+
+            # Coastline data mount - determine permissions based on user groups
+            if 'admin' in user_groups or 'coastline' in user_groups:
+                coastline_mount = {
+                    "name": "efs-coastline-data",
+                    "mountPath": "/home/jovyan/data/coastlines",
+                    "readOnly": False  # Admin and coastline group get read-write
+                }
+            else:
+                coastline_mount = {
+                    "name": "efs-coastline-data",
+                    "mountPath": "/home/jovyan/data/coastlines",
+                    "readOnly": True   # Everyone else gets read-only
+                }
+
+            # Add all volumes to all users
+            volumes.append(public_volume)
+            volumes.append(coastline_volume)
+            volume_mounts.append(public_mount)
+            volume_mounts.append(coastline_mount)
+
+            # Handle spawner.volumes or spawner.volume_mounts is None
+            if spawner.volumes is None:
+                spawner.volumes = []
+            if spawner.volume_mounts is None:
+                spawner.volume_mounts = []
+
+            # Check for duplicates before extending to avoid mounting same volume twice
+            existing_volume_names = {v.get('name') for v in spawner.volumes}
+            existing_mount_names = {vm.get('name') for vm in spawner.volume_mounts}
+
+            # Only add volumes that don't already exist
+            for volume in volumes:
+                if volume['name'] not in existing_volume_names:
+                    spawner.volumes.append(volume)
+                else:
+                    log.info(f"Volume {volume['name']} already exists, skipping")
+
+            # Only add mounts that don't already exist
+            for mount in volume_mounts:
+                if mount['name'] not in existing_mount_names:
+                    spawner.volume_mounts.append(mount)
+                else:
+                    log.info(f"Volume mount {mount['name']} already exists, skipping")
+
+            # Set security context with supplemental groups (merge with existing if present)
+            supp_groups = [100]  # base group
+            if 'coastline' in user_groups or 'admin' in user_groups:
+                supp_groups.append(2000)
+            supp_groups = list(set(supp_groups))  # Deduplicate
+
+            if not hasattr(spawner, 'security_context') or not spawner.security_context:
+                spawner.security_context = {}
+
+            # Merge supplementalGroups if existing
+            existing_supp = spawner.security_context.get('supplementalGroups', [])
+            spawner.security_context['supplementalGroups'] = list(set(existing_supp + supp_groups))
+            spawner.security_context.update({
+                "runAsUser": 1000,
+                "fsGroup": 100,
+            })
+
+            log.info(f"Added {len(volumes)} EFS volumes for user {spawner.user.name}. Total volumes now: {len(spawner.volumes)}")
+
+        except Exception as e:
+            log.error(f"Error in pre_spawn_hook for {spawner.user.name}: {e}", exc_info=True)
+            # Don't fail spawn if EFS setup fails
+            pass

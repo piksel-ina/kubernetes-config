@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: terria
+
+resources:
+  - ../../base/terria
+  - ingress.yaml
+
+configMapGenerator:
+  - name: terria-client-config
+    behavior: merge
+    options:
+      labels:
+        app: terria
+    files:
+      - simple.json
+
+images:
+  - name: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/terriamap
+    newTag: v20260520-1018

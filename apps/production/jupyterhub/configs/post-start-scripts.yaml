@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-etc-singleuser
+  namespace: jupyterhub
+# This ConfigMap contains the post-start lifecycle hook script for JupyterHub single-user pods.
+data:
+  k8s-lifecycle-hook-post-start.sh: |
+    #!/bin/bash
+    # Removed 'set -e' to prevent script from exiting on errors
+
+    # --- Step 1 - Setup ---
+
+    # Function for logging with timestamps
+    log() {
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    }
+
+    log "Running post-start hook"
+
+    # Configuration variables
+    GITHUB_REPO="${GITHUB_REPO:-https://github.com/piksel-ina/piksel-notebooks.git}"
+    BRANCH="${BRANCH:-main}"
+    TARGET_DIR="${TARGET_DIR:-/home/jovyan/notebooks}"
+    CONDA_ENV="${CONDA_ENV:-notebook}"
+
+    # --- Step 2 - Quickfix to common environment issues --
+
+    # --- SSH Key
+    if [ -f ~/.ssh/id_ed25519 ]; then
+      log "Fixing SSH key permissions"
+      chmod 600 ~/.ssh/id_ed25519 2>/dev/null && log "Set ~/.ssh/id_ed25519 permissions to 600" || log "Warning: Failed to set id_ed25519 permissions"
+    fi
+
+    if [ -f ~/.ssh/id_rsa ]; then
+      chmod 600 ~/.ssh/id_rsa 2>/dev/null && log "Set ~/.ssh/id_rsa permissions to 600" || log "Warning: Failed to set id_rsa permissions"
+    fi
+
+    if [ -d ~/.ssh ]; then
+      chmod 700 ~/.ssh 2>/dev/null && log "Set ~/.ssh directory permissions to 700" || log "Warning: Failed to set .ssh directory permissions"
+    fi
+
+    # --- GPG agent
+    export GPG_TTY=$(tty) 2>/dev/null || log "Warning: Failed to set GPG_TTY"
+
+    # --- Step 3 - Sync Notebooks ---
+
+    # Sync with gitpuller (attempt 1)
+    log "Syncing notebooks from ${GITHUB_REPO}"
+    if /srv/conda/envs/${CONDA_ENV}/bin/gitpuller "${GITHUB_REPO}" "${BRANCH}" "${TARGET_DIR}" 2>/dev/null; then
+      log "Successfully synced notebooks to ${TARGET_DIR}"
+    else
+      log "Warning: Failed to sync repository [1]"
+
+      # Sync with gitpuller (attempt 2)
+      log "Trying alternative gitpuller path"
+      if /opt/conda/bin/gitpuller "${GITHUB_REPO}" "${BRANCH}" "${TARGET_DIR}" 2>/dev/null; then
+        log "Successfully synced notebooks to ${TARGET_DIR}"
+      else
+        log "Warning: Failed to sync repository [2]"
+      fi
+    fi
+
+    # --- Step 4 - Update JupyterLab settings ---
+
+    # Create necessary directories
+    log "Initializing directories"
+    mkdir -p ~/.jupyter/lab/user-settings/@jupyterlab/docmanager-extension/ 2>/dev/null || log "Warning: Failed to create docmanager-extension directory"
+    mkdir -p ~/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/ 2>/dev/null || log "Warning: Failed to create apputils-extension directory"
+
+    log "Updating JupyterLab settings"
+
+    # Markdown preview and autosave settings
+    cat <<EOF > ~/.jupyter/lab/user-settings/@jupyterlab/docmanager-extension/plugin.jupyterlab-settings 2>/dev/null || log "Warning: Failed to write docmanager settings"
+    {
+    "defaultViewers": {
+        "markdown": "Markdown Preview"
+      }
+    }
+    EOF
+    log "Set markdown preview and autosave settings"
+
+    # Disable news notifications
+    cat <<EOF > ~/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/notification.jupyterlab-settings 2>/dev/null || log "Warning: Failed to write notification settings"
+    {
+      "checkForUpdates": false,
+      "doNotDisturbMode": false,
+      "fetchNews": "false"
+    }
+    EOF
+    log "Disabled JupyterLab news notifications"
+
+    # --- Step 5 - Clean up ---
+    # Remove empty lost+found directories
+    rmdir ~/lost+found/ 2>/dev/null  || true
+    rmdir ~/mambauser/ 2>/dev/null  || true
+
+    # Disable LD_PRELOAD to prevent library conflicts
+    unset LD_PRELOAD 2>/dev/null || true
+
+    log "Clean up completed"
+
+    log "Post-start hook completed"
+
+    exit 0

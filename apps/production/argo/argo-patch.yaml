@@ -1,0 +1,86 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: argo-workflows
+spec:
+  values:
+    useStaticCredentials: false
+    server:
+      serviceAccount:
+        create: true
+        name: "argo-workflows-server"
+        # Production uses EKS Pod Identity, not IRSA. Drop the base/staging
+        # role-arn annotation so the pod-identity association takes effect.
+        annotations:
+          eks.amazonaws.com/role-arn: null
+      logging:
+        level: info
+        globallevel: "0"
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-production
+          external-dns.alpha.kubernetes.io/hostname: argo.piksel.big.go.id
+        hosts:
+          - argo.piksel.big.go.id
+        tls:
+          - hosts:
+              - argo.piksel.big.go.id
+            secretName: argo-ingress
+      authModes: [sso]
+      sso:
+        secure: true
+        enabled: true
+        issuer: "https://cognito-idp.ap-southeast-3.amazonaws.com/ap-southeast-3_gmR6onwGY"
+        sessionExpiry: 240h
+        clientId:
+          name: argo-client-secret
+          key: client-id
+        clientSecret:
+          name: argo-client-secret
+          key: client-secret
+        scopes:
+          - openid
+          - email
+          - profile
+        redirectUrl: https://argo.piksel.big.go.id/oauth2/callback
+        customGroupClaimName: "cognito:groups"
+        rbac:
+          enabled: true
+
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        bucket: "piksel-production-argo-artifacts"
+        region: ap-southeast-3
+        endpoint: s3.ap-southeast-3.amazonaws.com
+        keyFormat: "artifacts/{{workflow.namespace}}/{{workflow.name}}/{{pod.name}}"
+        useSDKCreds: true
+
+    workflow:
+      serviceAccount:
+        create: true
+        name: "argo-workflows-executor"
+        annotations:
+          workflows.argoproj.io/rbac-rule: "true"
+          workflows.argoproj.io/rbac-rule-precedence: "1"
+          # Production uses EKS Pod Identity, not IRSA.
+          eks.amazonaws.com/role-arn: null
+      rbac:
+        create: true
+
+    controller:
+      persistence:
+        postgresql:
+          host: pg-proxy-service.database.svc.cluster.local
+          port: 6432
+          database: argo
+          tableName: workflows
+          userNameSecret:
+            name: argo
+            key: username
+          passwordSecret:
+            name: argo
+            key: password
+          ssl: false
