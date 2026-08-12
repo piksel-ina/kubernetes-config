@@ -55,7 +55,6 @@ spec:
             PGPASSWORD="$password" psql -h "$host" -p "$port" -U "$user" -d "$database" -tAc "$query"
           }
 
-          # Validate prerequisites (TF-provisioned)
           echo "Validating prerequisites..."
           run_sql "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "postgres" "SELECT 1;" > /dev/null
 
@@ -72,13 +71,11 @@ spec:
 
           echo "✓ Prerequisites validated (database, users, PostGIS — all TF-provisioned)"
 
-          # Clean existing schemas (fresh init only)
           echo "Cleaning existing ODC schemas..."
           run_sql "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" "DROP SCHEMA IF EXISTS odc CASCADE;" 2>/dev/null || true
           run_sql "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" "DROP SCHEMA IF EXISTS agdc CASCADE;" 2>/dev/null || true
           echo "✓ Schemas cleaned"
 
-          # Initialize ODC (creates odc schema + odc_user/odc_manage/odc_admin roles)
           echo "Initializing ODC schema..."
           export ODC_DEFAULT_DB_HOSTNAME="$POSTGRES_HOST"
           export ODC_DEFAULT_DB_PORT="$POSTGRES_PORT"
@@ -91,7 +88,6 @@ spec:
           datacube -v system init
           echo "✓ ODC schema initialized"
 
-          # Create spatial indexes (must come BEFORE role grants so spatial tables get permissions)
           echo "Creating spatial indexes..."
           for epsg in 4326 3857; do
             datacube spindex create $epsg > /dev/null 2>&1 || true
@@ -99,27 +95,27 @@ spec:
           done
           echo "✓ Spatial indexes created (4326, 3857)"
 
-          # Grant ODC roles to TF-provisioned users (after all tables exist).
-          # Master owns odc_user/odc_manage/odc_admin (it created them via
-          # `system init`), so on PG16+ it can grant them directly. We use raw
-          # SQL instead of `datacube user grant`, which swallows grant failures
-          # (contextlib.suppress + unchecked return) and can report a false
-          # success while leaving OWS without schema permissions.
-          echo "Granting ODC roles..."
+          echo "Granting ODC roles and schema privileges..."
           PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
             -U "$MASTER_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
-            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\";"
-          # Verify the grants actually landed (guards against silent regressions
-          # if a future re-init or manual schema op wipes the membership).
+            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\"; GRANT USAGE ON SCHEMA odc TO odc_user, odc_manage; GRANT SELECT ON ALL TABLES IN SCHEMA odc TO odc_user; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA odc TO odc_manage; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA odc TO odc_manage;"
+
           for pair in "$ODC_USER:odc_manage" "$ODC_READ_USER:odc_user"; do
             u="${pair%%:*}"; r="${pair##*:}"
             ok=$(run_sql_check "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" \
                   "SELECT pg_has_role('$u', '$r', 'MEMBER');")
             [ "$ok" = "t" ] || { echo "ERROR: $u is not a member of $r after grant"; exit 1; }
           done
-          echo "✓ Roles granted and verified ($ODC_USER → odc_manage, $ODC_READ_USER → odc_user)"
 
-          # Test PgBouncer connections (no SSL for internal)
+          can_write=$(run_sql_check "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" \
+            "SELECT COALESCE(bool_and(has_table_privilege('$ODC_USER', c.oid, 'SELECT,INSERT,UPDATE,DELETE')), false) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'odc' AND c.relkind IN ('r', 'p');")
+          [ "$can_write" = "t" ] || { echo "ERROR: $ODC_USER does not have complete access to every ODC table after grant"; exit 1; }
+
+          can_read=$(run_sql_check "$POSTGRES_HOST" "$POSTGRES_PORT" "$MASTER_USER" "$MASTER_PASSWORD" "$POSTGRES_DB" \
+            "SELECT COALESCE(bool_and(has_table_privilege('$ODC_READ_USER', c.oid, 'SELECT')), false) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'odc' AND c.relkind IN ('r', 'p');")
+          [ "$can_read" = "t" ] || { echo "ERROR: $ODC_READ_USER cannot read every ODC table after grant"; exit 1; }
+          echo "✓ Roles and ODC-schema privileges granted and verified"
+
           echo "Testing PgBouncer connections..."
           export PGSSLMODE=disable PGSSLROOTCERT=""
 
@@ -132,7 +128,6 @@ spec:
           }
           echo "✓ PgBouncer connections tested"
 
-          # Final system check via PgBouncer
           echo "Running final system check..."
           export ODC_DEFAULT_DB_HOSTNAME="pg-proxy-service.database.svc.cluster.local"
           export ODC_DEFAULT_DB_PORT="6432"

@@ -2,16 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: odc-ensure-grants-
-  name: odc-ensure-grants
   namespace: argo-workflows
-# Idempotent permission-repair for ODC login users. Re-asserts the
-# login-user -> ODC-role memberships that `datacube system init` establishes:
-#   odc     -> odc_manage
-#   odcread -> odc_user
-# Safe to run any time (e.g. after a Terraform apply revokes memberships).
-# Unlike odc-schema-init this does NOT drop or re-create any schema, so it
-# never touches indexed data. Run with: argo submit -n argo-workflows \
-#   workflows/once/odc-ensure-grants.yaml
 spec:
   entrypoint: odc-ensure-grants
   serviceAccountName: argo-workflows-executor
@@ -50,7 +41,6 @@ spec:
               -U "$MASTER_USER" -d "$POSTGRES_DB" -tAc "$1"
           }
 
-          # Validate prerequisites (TF-provisioned users + ODC roles must exist).
           echo "Validating prerequisites..."
           for role in "$ODC_USER" "$ODC_READ_USER" odc_user odc_manage; do
             exists=$(run_sql_check "SELECT 1 FROM pg_roles WHERE rolname='$role';" || echo "0")
@@ -61,21 +51,24 @@ spec:
           done
           echo "✓ Users and ODC roles present"
 
-          # Re-assert memberships (GRANT is idempotent; re-running is a no-op).
-          echo "Granting ODC roles..."
+          echo "Granting ODC roles and spatial-table privileges..."
           PGPASSWORD="$MASTER_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
             -U "$MASTER_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
-            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\";"
+            -c "GRANT odc_manage TO \"$ODC_USER\"; GRANT odc_user TO \"$ODC_READ_USER\"; GRANT USAGE ON SCHEMA odc TO odc_user, odc_manage; GRANT SELECT ON ALL TABLES IN SCHEMA odc TO odc_user; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA odc TO odc_manage; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA odc TO odc_manage;"
 
-          # Verify the grants actually landed.
           for pair in "$ODC_USER:odc_manage" "$ODC_READ_USER:odc_user"; do
             u="${pair%%:*}"; r="${pair##*:}"
             ok=$(run_sql_check "SELECT pg_has_role('$u', '$r', 'MEMBER');")
             [ "$ok" = "t" ] || { echo "ERROR: $u is not a member of $r after grant"; exit 1; }
           done
-          echo "✓ Roles granted and verified ($ODC_USER → odc_manage, $ODC_READ_USER → odc_user)"
 
-          # Confirm both users can actually use the odc schema via PgBouncer.
+          can_write=$(run_sql_check "SELECT bool_and(has_table_privilege('$ODC_USER', c.oid, 'SELECT,INSERT,UPDATE,DELETE')) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'odc' AND c.relkind IN ('r', 'p');")
+          [ "$can_write" = "t" ] || { echo "ERROR: $ODC_USER does not have complete access to every ODC table after grant"; exit 1; }
+
+          can_read=$(run_sql_check "SELECT bool_and(has_table_privilege('$ODC_READ_USER', c.oid, 'SELECT')) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'odc' AND c.relkind IN ('r', 'p');")
+          [ "$can_read" = "t" ] || { echo "ERROR: $ODC_READ_USER cannot read every ODC table after grant"; exit 1; }
+          echo "✓ Roles and ODC-schema privileges granted and verified"
+
           echo "Testing PgBouncer connections..."
           export PGSSLMODE=disable PGSSLROOTCERT=""
           PGPASSWORD="$ODC_PASS" psql -h pg-proxy-service.database.svc.cluster.local -p 6432 \
