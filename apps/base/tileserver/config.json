@@ -17,7 +17,7 @@
   },
   "data": {
     "coastlines": {
-      "pmtiles": "https://piksel-staging-public-data.s3.ap-southeast-3.amazonaws.com/ls_coastlines/coastlines_0.0.5.Java-Island-V3.pmtiles"
+      "pmtiles": "https://piksel-staging-public-data.s3.ap-southeast-3.amazonaws.com/ls_coastlines/coastlines_0.0.5-combined-inatides.pmtiles"
     }
   }
 }
