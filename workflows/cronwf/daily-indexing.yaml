@@ -4,7 +4,8 @@ metadata:
   name: daily-satellite-all
   namespace: argo-workflows
 spec:
-  schedule: "5 17 * * *"
+  schedules:
+    - "5 17 * * *"
   concurrencyPolicy: "Forbid"
   startingDeadlineSeconds: 300
   successfulJobsHistoryLimit: 3
