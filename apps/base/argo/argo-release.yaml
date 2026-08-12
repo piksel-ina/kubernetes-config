@@ -7,13 +7,16 @@ spec:
   chart:
     spec:
       chart: argo-workflows
-      version: "0.40.14"
+      version: "1.1.1"
       sourceRef:
         kind: HelmRepository
         name: argo-repository
   interval: 5m
   values:
     singleNamespace: true
+    crds:
+      full: false
+    useStaticCredentials: false
     server:
       # Allow UI to retrieve objects from AWS S3 bucker
       serviceAccount:
