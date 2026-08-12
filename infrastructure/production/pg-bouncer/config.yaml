@@ -29,10 +29,6 @@ data:
     # JupyterHub hub state (single low-concurrency process).
     jupyterhub = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=10
 
-    # STAC / pgSTAC (not yet deployed). Revisit to a bounded session pool if
-    # pypgstac bulk ingestion needs session features.
-    stac = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=10
-
     # Argo Workflows controller persistence.
     argo = host=db-endpoint.database.svc.cluster.local port=5432 pool_mode=transaction pool_size=20
 
