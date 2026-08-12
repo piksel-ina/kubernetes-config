@@ -6,4 +6,3 @@ resources:
   # db-user-create-job.yaml - migrated to TF (terraform-iac/aws-database/database-users.tf)
   # db-user-create-config.yaml - migrated to TF (terraform-iac/aws-database/database-users.tf)
   - rds-ca-cert.yaml
-  - notifications.yaml

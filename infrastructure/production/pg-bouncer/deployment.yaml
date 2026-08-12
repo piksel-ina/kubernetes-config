@@ -50,7 +50,7 @@ spec:
               echo "Generating userlist.txt from Secrets..."
 
               # List of secrets (users)
-              for secret in argo jupyterhub grafana stac stacread odc odcread; do
+              for secret in argo jupyterhub grafana odc odcread; do
                 if [ -f "/secrets/${secret}/password" ]; then
                   password=$(cat "/secrets/${secret}/password")
                   echo "\"${secret}\" \"${password}\"" >> /etc/pgbouncer/userlist.txt
@@ -74,12 +74,6 @@ spec:
               readOnly: true
             - name: grafana-secret
               mountPath: /secrets/grafana
-              readOnly: true
-            - name: stac-secret
-              mountPath: /secrets/stac
-              readOnly: true
-            - name: stacread-secret
-              mountPath: /secrets/stacread
               readOnly: true
             - name: odc-secret
               mountPath: /secrets/odc
@@ -157,12 +151,6 @@ spec:
         - name: grafana-secret
           secret:
             secretName: grafana
-        - name: stac-secret
-          secret:
-            secretName: stac
-        - name: stacread-secret
-          secret:
-            secretName: stacread
         - name: odc-secret
           secret:
             secretName: odc
