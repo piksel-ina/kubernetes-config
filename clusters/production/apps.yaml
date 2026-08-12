@@ -35,6 +35,23 @@ spec:
   wait: true
   timeout: 5m0s
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: workflows-templates
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: argo-workflows
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./workflows/templates
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
 # Datacube Explorer
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
