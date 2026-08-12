@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-proxy
+  namespace: database
+  labels:
+    app: pg-proxy
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: pg-proxy
+  template:
+    metadata:
+      labels:
+        app: pg-proxy
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: pg-proxy
+                topologyKey: "kubernetes.io/hostname"
+
+      # Set this to system nodegroup
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+          effect: "NoSchedule"
+      nodeSelector:
+        karpenter.sh/controller: "true"
+
+      # Generating Userlist
+      initContainers:
+        - name: generate-userlist
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Create userlist.txt by reading mounted secrets
+              echo "Generating userlist.txt from Secrets..."
+
+              # List of secrets (users)
+              for secret in argo jupyterhub grafana stac stacread odc odcread; do
+                if [ -f "/secrets/${secret}/password" ]; then
+                  password=$(cat "/secrets/${secret}/password")
+                  echo "\"${secret}\" \"${password}\"" >> /etc/pgbouncer/userlist.txt
+                  echo "Added user: ${secret}"
+                else
+                  echo "Warning: Secret for ${secret} not found or missing password key" >&2
+                fi
+              done
+
+              echo "Userlist.txt generated successfully."
+              echo "Contents of userlist.txt (users only):"
+              cat /etc/pgbouncer/userlist.txt | awk '{print $1}'
+          volumeMounts:
+            - name: userlist
+              mountPath: /etc/pgbouncer
+            - name: argo-secret
+              mountPath: /secrets/argo
+              readOnly: true
+            - name: jupyterhub-secret
+              mountPath: /secrets/jupyterhub
+              readOnly: true
+            - name: grafana-secret
+              mountPath: /secrets/grafana
+              readOnly: true
+            - name: stac-secret
+              mountPath: /secrets/stac
+              readOnly: true
+            - name: stacread-secret
+              mountPath: /secrets/stacread
+              readOnly: true
+            - name: odc-secret
+              mountPath: /secrets/odc
+              readOnly: true
+            - name: odcread-secret
+              mountPath: /secrets/odcread
+              readOnly: true
+
+      containers:
+        - name: pgbouncer
+          image: edoburu/pgbouncer:1.21.0-p2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6432
+              protocol: TCP
+              name: pgbouncer
+          env:
+            - name: DATABASES_HOST
+              value: "db-endpoint.database.svc.cluster.local"
+            - name: DATABASES_PORT
+              value: "5432"
+            - name: DATABASES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: username
+            - name: DATABASES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: password
+          # Pool sizing / mode are defined in the mounted pgbouncer.ini
+          # (ConfigMap), which is the single source of truth. The edoburu
+          # entrypoint ignores POOL_MODE / MAX_CLIENT_CONN / DEFAULT_POOL_SIZE
+          # env vars when a config file is mounted, so they are intentionally
+          # not set here to avoid contradictory, misleading values.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              # PgBouncer is single-threaded; a 500m limit throttles the event
+              # loop under burst (e.g. OWS HPA scale-up). Give it a full core.
+              cpu: 1000m
+              memory: 512Mi
+          volumeMounts:
+            - name: pgbouncer-config
+              mountPath: /etc/pgbouncer/pgbouncer.ini
+              subPath: pgbouncer.ini
+            - name: userlist
+              mountPath: /etc/pgbouncer/userlist.txt
+              subPath: userlist.txt
+          livenessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: userlist
+          emptyDir: {}
+        - name: pgbouncer-config
+          configMap:
+            name: pgbouncer-config
+        - name: argo-secret
+          secret:
+            secretName: argo
+        - name: jupyterhub-secret
+          secret:
+            secretName: jupyterhub
+        - name: grafana-secret
+          secret:
+            secretName: grafana
+        - name: stac-secret
+          secret:
+            secretName: stac
+        - name: stacread-secret
+          secret:
+            secretName: stacread
+        - name: odc-secret
+          secret:
+            secretName: odc
+        - name: odcread-secret
+          secret:
+            secretName: odcread
+      restartPolicy: Always
