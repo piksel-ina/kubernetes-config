@@ -6,7 +6,7 @@ metadata:
 spec:
   serviceAccountName: argo-workflows-executor
   entrypoint: grid-bulk-indexing
-  parallelism: 10
+  parallelism: 1
   podGC:
     strategy: OnPodCompletion
   podMetadata:
@@ -229,6 +229,13 @@ spec:
           print(f"Generated {len(all_tasks)} individual tasks", file=sys.stderr)
 
     - name: indexing-tasks
+      activeDeadlineSeconds: 1800
+      retryStrategy:
+        limit: "2"
+        retryPolicy: OnFailure
+        backoff:
+          duration: 30s
+          factor: 2
       inputs:
         parameters:
           - name: catalog
