@@ -1,0 +1,425 @@
+{
+  "homeCamera": {
+    "north": 6,
+    "east": 141,
+    "south": -11,
+    "west": 82
+  },
+  "catalog": [
+    {
+      "id": "surface-reflectance-group",
+      "type": "group",
+      "name": "Data Satelit Optik",
+      "description": "Data dari satelit optik, yaitu satelit yang merekam cahaya matahari yang dipantulkan permukaan bumi. Karena bergantung pada cahaya matahari, perekaman hanya berlangsung pada siang hari dan dapat terhalang awan. Kelompok ini mencakup citra dari arsip penyedia data maupun produk hasil pengolahannya.",
+      "members": [
+        {
+          "id": "s2_l2a",
+          "type": "group",
+          "name": "Arsip Citra Publik",
+          "description": "Citra multispektral yang diakses langsung dari arsip publik Sentinel-2 dan USGS Landsat di Oregon, Amerika Serikat. Daftar citra terbaru diperbarui setiap hari saat data baru tersedia. Pemuatan awal mungkin membutuhkan waktu lebih lama karena data dibaca langsung dari arsip publik.",
+          "members": [
+            {
+              "id": "sentinel-2-surface-reflectance",
+              "type": "group",
+              "name": "Sentinel-2 SR L2A",
+              "description": "Arsip citra Sentinel-2 Level-2A yang sudah dikoreksi atmosfer, dari dua satelit kembar Sentinel-2A dan Sentinel-2B. Keduanya mengorbit pada lintasan yang sama dengan selisih setengah putaran, sehingga satu wilayah dapat terekam setiap lima hari. Resolusi spasial hingga 10 meter.",
+              "members": [
+                {
+                  "id": "s2-l2a",
+                  "name": "Sentinel-2 SR L2A (2017–sekarang)",
+                  "type": "wms",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "s2_l2a",
+                  "opacity": 0.8,
+                  "description": "Citra Sentinel-2 Level-2A yang telah dikoreksi atmosfer, dengan resolusi spasial hingga 10 meter. Sentinel-2 umumnya melintasi wilayah yang sama setiap 5 hari.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                }
+              ]
+            },
+            {
+              "id": "landsat-surface-reflectance",
+              "type": "group",
+              "name": "Landsat SR C2L2",
+              "description": "Arsip citra Landsat Collection 2 Level-2 dari USGS dengan resolusi spasial 30 meter. Landsat 5 menyediakan arsip terlama (1986-2011); Landsat 7 melanjutkan rekaman hingga 2024; sedangkan Landsat 8 (sejak 2013) dan Landsat 9 (sejak 2021) menyediakan pengamatan terkini dengan sensor generasi lebih baru. Setiap satelit Landsat umumnya melintasi wilayah yang sama setiap 16 hari. Landsat 8 dan 9 dikonfigurasi untuk menggunakan jalur lintasan yang sama dengan selisih 8 hari, sehingga bila digunakan bersamaan, wilayah yang sama dapat terekam setiap 8 hari.",
+              "members": [
+                {
+                  "id": "landsat-9-surface-reflectance",
+                  "name": "Landsat 9 SR C2L2 (2021–sekarang)",
+                  "type": "wms",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "ls9_c2l2_sr",
+                  "opacity": 0.8,
+                  "description": "Citra Landsat 9 OLI-2/TIRS-2 yang telah dikoreksi atmosfer, dengan resolusi spasial 30 meter dan cakupan Indonesia sejak 2021.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                },
+                {
+                  "id": "landsat-8-surface-reflectance",
+                  "name": "Landsat 8 SR C2L2 (2013–sekarang)",
+                  "type": "wms",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "ls8_c2l2_sr",
+                  "opacity": 0.8,
+                  "description": "Citra Landsat 8 OLI/TIRS yang telah dikoreksi atmosfer, dengan resolusi spasial 30 meter dan cakupan Indonesia sejak 2013.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                },
+                {
+                  "id": "landsat-7-surface-reflectance",
+                  "name": "Landsat 7 SR C2L2 (1999–2024)",
+                  "type": "wms",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "ls7_c2l2_sr",
+                  "opacity": 0.8,
+                  "description": "Citra Landsat 7 ETM+ yang telah dikoreksi atmosfer, dengan resolusi spasial 30 meter dan cakupan Indonesia pada 1999-2024.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                },
+                {
+                  "id": "landsat-5-surface-reflectance",
+                  "name": "Landsat 5 SR C2L2 (1986–2011)",
+                  "type": "wms",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "ls5_c2l2_sr",
+                  "opacity": 0.8,
+                  "description": "Citra Landsat 5 TM yang telah dikoreksi atmosfer, dengan resolusi spasial 30 meter dan cakupan Indonesia pada 1986-2011.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sentinel-2-derived-products",
+          "type": "group",
+          "name": "Produk Turunan Sentinel-2",
+          "description": "Produk hasil pengolahan lanjutan dari arsip citra Sentinel-2. Berbeda dengan citra per tanggal perekaman, produk ini sudah diolah untuk kebutuhan analisis tertentu.",
+          "members": [
+            {
+              "id": "geomad",
+              "type": "group",
+              "name": "GeoMAD Tahunan",
+              "description": "Ringkasan tahunan dari seluruh citra Sentinel-2 sepanjang satu tahun, dihitung dengan metode GeoMAD (Geometric Median and Median Absolute Deviation). Setiap piksel diwakili oleh satu nilai representatif dari semua pengamatan pada tahun tersebut. Produk ini relatif bersih dari awan dan bayangan, sehingga kondisi permukaan bumi lebih mudah diamati.",
+              "members": [
+                {
+                  "id": "s2-geomad-spectral",
+                  "type": "wms",
+                  "name": "Citra Geomedian Tahunan",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "s2_geomad_annual_spectral",
+                  "opacity": 0.8,
+                  "description": "Kanal spektral Sentinel-2 dalam komposit geomedian tahunan, tersedia dalam tampilan RGB warna alami, false colour near infrared yang menonjolkan vegetasi, dan false colour red edge yang lebih sensitif terhadap kondisi vegetasi.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  },
+                  "dateFormat": "UTC:yyyy"
+                },
+                {
+                  "id": "s2-geomad-indices",
+                  "type": "wms",
+                  "name": "Indeks Spektral Tahunan",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "s2_geomad_annual_indices",
+                  "opacity": 0.8,
+                  "description": "Indeks yang dihitung dari komposit geomedian tahunan. NDVI dan NDVI Red Edge lebih peka terhadap vegetasi, NDWI dan MNDWI terhadap air, NDMI terhadap kelembapan, NDBI terhadap lahan terbangun, dan BSI terhadap tanah terbuka.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  },
+                  "dateFormat": "UTC:yyyy"
+                },
+                {
+                  "id": "s2-geomad-statistics",
+                  "type": "wms",
+                  "name": "Statistik MAD Tahunan",
+                  "url": "https://ows.piksel.big.go.id/wms",
+                  "layers": "s2_geomad_annual_statistics",
+                  "opacity": 0.8,
+                  "description": "Ukuran simpangan nilai piksel terhadap komposit geomedian sepanjang satu tahun. Nilai tinggi menandai lokasi yang banyak berubah, nilai rendah menandai lokasi yang stabil.\n\n- **EMAD** lebih peka terhadap perubahan tingkat kecerahan pantulan. Berguna untuk menelusuri genangan dan banjir, hilangnya vegetasi, serta pembukaan lahan, dan untuk memisahkan permukaan yang stabil dari yang dinamis.\n- **SMAD** lebih peka terhadap perubahan bentuk pantulan antarkanal, yaitu perubahan jenis tutupan lahan. Karena tidak terpengaruh perbedaan kecerahan, perubahan tetap terlihat meski tingkat kecerahannya mirip. Cocok untuk memantau alih fungsi lahan dan menelusuri tubuh air, yang pantulannya sangat bervariasi.\n- **BCMAD** menonjolkan perbedaan pada setiap kanal secara proporsional. Nilainya berkisar 0 sampai 1 sehingga sebanding antarlokasi dan antartahun, dan biasa dipakai bersama EMAD dan SMAD sebagai masukan klasifikasi tutupan lahan.\n- **Count** menunjukkan berapa banyak pengamatan yang tersedia di setiap piksel sepanjang tahun. Nilai rendah berarti geomedian dan MAD di lokasi itu dihitung dari sedikit pengamatan sehingga perlu dibaca lebih hati-hati, misalnya di wilayah yang sering tertutup awan. Nilai tertinggi biasanya berada di area tumpang tindih lintasan satelit.\n\nTersedia juga tampilan ternary MAD RGB yang menggabungkan ketiga MAD dalam satu citra.",
+                  "tileErrorHandlingOptions": {
+                    "thresholdBeforeDisablingItem": 20,
+                    "ignoreUnknownTileErrors": true
+                  },
+                  "dateFormat": "UTC:yyyy"
+                }
+              ]
+            },
+            {
+              "id": "QwErTyUiOp",
+              "type": "group",
+              "name": "Mosaik Global Sentinel-2",
+              "description": "Mosaik citra Sentinel-2 tahunan bebas awan untuk seluruh dunia dari EOX, cocok sebagai citra latar atau pratinjau. Untuk mengoptimalkan kecepatan pemuatan, mosaik ini tidak menyertakan nilai kanal spektral, sehingga produk ini tidak dapat dipakai untuk analisis.",
+              "members": [
+                {
+                  "id": "s2cloudless-2025",
+                  "name": "Mosaik Sentinel-2 2025 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2025_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "s2cloudless-2024",
+                  "name": "Mosaik Sentinel-2 2024 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2024_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "s2cloudless-2023",
+                  "name": "Mosaik Sentinel-2 2023 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2023_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "s2cloudless-2022",
+                  "name": "Mosaik Sentinel-2 2022 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2022_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "s2cloudless-2021",
+                  "name": "Mosaik Sentinel-2 2021 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2021_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "B8gpm2I3gB",
+                  "name": "Mosaik Sentinel-2 2020 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2020_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "HrWLyyyo6V",
+                  "name": "Mosaik Sentinel-2 2019 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2019_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "jCJmccfll6",
+                  "name": "Mosaik Sentinel-2 2018 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2018_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "s2cloudless-2017",
+                  "name": "Mosaik Sentinel-2 2017 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless-2017_3857",
+                  "style": "default",
+                  "opacity": 1
+                },
+                {
+                  "id": "lIvVnuKJA9",
+                  "name": "Mosaik Sentinel-2 2016 (Pratinjau)",
+                  "type": "wmts",
+                  "url": "https://tiles.maps.eox.at/wmts/1.0.0/WMTSCapabilities.xml",
+                  "layer": "s2cloudless_3857",
+                  "style": "default",
+                  "opacity": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "coastal-product-group",
+      "type": "group",
+      "name": "Coastal Product",
+      "members": [
+        {
+          "id": "coastlines",
+          "type": "wmts",
+          "name": "Indonesia Coastlines",
+          "url": "https://tiles.piksel.big.go.id/styles/coastlines/wmts.xml",
+          "description": "The Piksel (Digital Earth Indonesia) coastlines product is a representation of annual shoreline positions. It estimates the edge of water location at near mean tide level within each year. The years of available data vary based on the availability of source Landsat satellite imagery within a particular location. The coastlines product can be useful for monitoring patterns of movement in annual shoreline locations and determining the velocity and direction of any changes. The product does not attempt to determine causal factors for any observed changes. It may be used in combination with local observations and knowledge, or other external information to better understand possible causes and effects.",
+          "layer": "coastlines-256",
+          "style": "default",
+          "isGeoServer": "false",
+          "tileErrorHandlingOptions": {
+            "thresholdBeforeDisablingItem": 20,
+            "ignoreUnknownTileErrors": true
+          },
+          "availableStyles": [
+            {
+              "layerName": "coastlines-256",
+              "styles": [
+                {
+                  "identifier": "default",
+                  "isDefault": "true",
+                  "legend": {
+                    "url": "https://raw.githubusercontent.com/digitalearthpacific/dep-coastlines/main/docs/DEP_Coastlines_legend.png"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "disaster-group",
+      "type": "group",
+      "name": "Disaster",
+      "members": [
+        {
+          "id": "flood-hazard-2025",
+          "type": "wms",
+          "name": "Bahaya Banjir 2025 (Flood Hazard)",
+          "url": "https://ows.piksel.big.go.id/wms",
+          "layers": "flood_hazard_rp10",
+          "opacity": 0.8,
+          "description": "Flood hazard scenarios for 2025, derived from a Modified Geomorphic Flood Index over FABDEM v1.2 terrain with BMKG design rainfall. Use the Return Period dropdown to switch between scenarios, and the Style selector for hazard class, flood depth (metres) or the underlying hazard index. Prototype release covering selected regions of Java only - areas outside the modelled regions carry no data rather than zero hazard.",
+          "modelDimensions": [
+            {
+              "id": "return-period",
+              "name": "Return Period",
+              "selectedId": "rp10",
+              "options": [
+                {
+                  "id": "rp02",
+                  "name": "1 in 2 years (50% AEP)",
+                  "value": {
+                    "layers": "flood_hazard_rp02"
+                  }
+                },
+                {
+                  "id": "rp05",
+                  "name": "1 in 5 years (20% AEP)",
+                  "value": {
+                    "layers": "flood_hazard_rp05"
+                  }
+                },
+                {
+                  "id": "rp10",
+                  "name": "1 in 10 years (10% AEP)",
+                  "value": {
+                    "layers": "flood_hazard_rp10"
+                  }
+                },
+                {
+                  "id": "rp25",
+                  "name": "1 in 25 years (4% AEP)",
+                  "value": {
+                    "layers": "flood_hazard_rp25"
+                  }
+                },
+                {
+                  "id": "rp50",
+                  "name": "1 in 50 years (2% AEP)",
+                  "value": {
+                    "layers": "flood_hazard_rp50"
+                  }
+                }
+              ]
+            }
+          ],
+          "tileErrorHandlingOptions": {
+            "thresholdBeforeDisablingItem": 20,
+            "ignoreUnknownTileErrors": true
+          }
+        }
+      ]
+    }
+  ],
+  "viewerMode": "2d",
+  "baseMaps": {
+    "items": [
+      {
+        "item": {
+          "id": "basemap-carto-voyager",
+          "name": "Peta Dasar (CARTO)",
+          "type": "open-street-map",
+          "url": "https://basemaps.cartocdn.com/rastertiles/voyager_labels_under/",
+          "subdomains": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "attribution": "© OpenStreetMap, © CARTO",
+          "opacity": 1.0
+        },
+        "image": "images/basemaps/indo-carto.png"
+      },
+      {
+        "item": {
+          "id": "basemap-openstreetmap",
+          "name": "OpenStreetMap",
+          "type": "open-street-map",
+          "url": "https://tile.openstreetmap.org/",
+          "attribution": "© OpenStreetMap contributors",
+          "opacity": 1.0
+        },
+        "image": "images/basemaps/indo-osm.png"
+      },
+      {
+        "item": {
+          "id": "basemap-esri-world-imagery",
+          "name": "ESRI World Imagery",
+          "type": "url-template-imagery",
+          "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          "attribution": "Tiles © Esri",
+          "opacity": 1.0
+        },
+        "image": "images/basemaps/indo-esri.png"
+      },
+      {
+        "item": {
+          "id": "basemap-rbi",
+          "name": "Rupabumi Indonesia (BIG)",
+          "type": "url-template-imagery",
+          "url": "https://geoservices.big.go.id/rbi/rest/services/BASEMAP/Rupabumi_Indonesia/MapServer/tile/{z}/{y}/{x}",
+          "attribution": "© Badan Informasi Geospasial",
+          "opacity": 1.0
+        },
+        "image": "images/basemaps/indo-rbi.png"
+      }
+    ],
+    "enabledBaseMaps": [
+      "basemap-carto-voyager",
+      "basemap-openstreetmap",
+      "basemap-esri-world-imagery",
+      "basemap-rbi"
+    ],
+    "defaultBaseMapId": "basemap-carto-voyager",
+    "previewBaseMapId": "basemap-carto-voyager"
+  }
+}

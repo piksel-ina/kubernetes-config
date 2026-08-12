@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: open-datacube
+resources:
+  - ../../base/datacube-explorer
+  - ingress.yaml
+
+images:
+  - name: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/dc-explorer
+    newTag: v20260721-1356

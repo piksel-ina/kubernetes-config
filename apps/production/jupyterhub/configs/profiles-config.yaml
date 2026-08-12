@@ -1,0 +1,468 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hub-profile-config
+  namespace: jupyterhub
+data:
+  profiles.py: |
+    from tornado import web
+    import os
+
+    async def get_user_groups(self, user):
+        """Extract user groups from AWS Cognito authentication state"""
+        try:
+            # Retrieve user authentication info
+            auth_state = await user.get_auth_state()
+            self.log.info(f"Auth state for {user.name}: {auth_state}")
+
+            # Extract Cognito groups from the token
+            if auth_state and 'oauth_user' in auth_state:
+                cognito_info = auth_state['oauth_user']
+                groups = cognito_info.get('cognito:groups', [])
+            elif auth_state and 'cognito:groups' in auth_state:
+                groups = auth_state['cognito:groups']
+            else:
+                self.log.warning(f"Could not find cognito:groups for user {user.name}")
+                groups = []
+
+            self.log.info(f"User {user.name} belongs to groups: {groups}")
+            return groups
+
+        except Exception as e:
+            self.log.error(f"Error retrieving groups for {user.name}: {e}")
+            return []
+
+    async def custom_options_form(self):
+        """Generate dynamic profile options based on user groups"""
+        self.log.info(f"Generating profiles for user: {self.user.name}")
+
+        # Define profile configurations
+        profiles_config = {
+            "base": [
+                {
+                    "display_name": "Standard Instance",
+                    "description": "4 vCPUs, 15GB RAM - Geospatial Learning",
+                    "slug": "standard",
+                    "default": True,
+                    "kubespawner_override": {
+                        "cpu_guarantee": 2.5,
+                        "cpu_limit": 3.0,
+                        "mem_guarantee": "13G",
+                        "mem_limit": "16G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "standard"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "standard",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "jupyter-profile": "standard",
+                            "karpenter.sh/do-not-disrupt": "true"
+                        }
+                    }
+                }
+            ],
+            "medium": [
+                {
+                    "display_name": "Medium Instance",
+                    "description": "4 vCPUs, 30GB RAM - Quick Data Production",
+                    "slug": "medium",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 2.5,
+                        "cpu_limit": 3.5,
+                        "mem_guarantee": "26G",
+                        "mem_limit": "30G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "medium"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "medium",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "jupyter-profile": "medium",
+                            "karpenter.sh/do-not-disrupt": "true"
+                        }
+                    }
+                }
+            ],
+            "moderate": [
+                {
+                    "display_name": "Medium Instance (Developer)",
+                    "description": "4 CPUs, 30GB RAM | Minimal base + sudo; Build your own environment",
+                    "slug": "dev-medium",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 2.5,
+                        "cpu_limit": 3.2,
+                        "mem_guarantee": "26G",
+                        "mem_limit": "32G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "medium"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "medium",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "karpenter.sh/do-not-disrupt": "true",
+                            "jupyter-profile": "medium"
+                        },
+                        "environment": {
+                            "JUPYTER_ENABLE_LAB": "yes",
+                            "JUPYTER_ALLOW_INSECURE_WRITES": "1",
+                            "GRANT_SUDO": "yes",
+                            "SUDO_USER": "jovyan",
+                        },
+                        "allow_privilege_escalation": True,
+                        "init_containers": [
+                            {
+                                "name": "setup-permissions",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "command": ["/bin/bash", "-c"],
+                                "args": [
+                                    """
+                                    set -e
+                                    mkdir -p /home/jovyan/.config /home/jovyan/.jupyter
+                                    cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
+                                    cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
+
+                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+
+                                    echo "Permissions setup complete"
+                                    """
+                                ],
+                                "securityContext": {
+                                    "runAsUser": 0,
+                                    "runAsGroup": 0,
+                                    "allowPrivilegeEscalation": True
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "name": "volume-{username}",
+                                        "mountPath": "/home/jovyan"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "power": [
+                {
+                    "display_name": "Large Instance (Developer)",
+                    "description": "8 CPUs, 60GB RAM | Minimal base + sudo; Build your own environment",
+                    "slug": "dev-large",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 6.5,
+                        "cpu_limit": 7.0,
+                        "mem_guarantee": "55G",
+                        "mem_limit": "64G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "large"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "large",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "karpenter.sh/do-not-disrupt": "true",
+                            "jupyter-profile": "large"
+                        },
+                        "environment": {
+                            "JUPYTER_ENABLE_LAB": "yes",
+                            "JUPYTER_ALLOW_INSECURE_WRITES": "1",
+                            "GRANT_SUDO": "yes",
+                            "SUDO_USER": "jovyan",
+                            "CHOWN_HOME": "yes"
+                        },
+                        "allow_privilege_escalation": True,
+                        "init_containers": [
+                            {
+                                "name": "setup-permissions",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "command": ["/bin/bash", "-c"],
+                                "args": [
+                                    """
+                                    set -e
+                                    mkdir -p /home/jovyan/.config /home/jovyan/.jupyter
+                                    cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
+                                    cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
+
+                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+
+                                    echo "Permissions setup complete"
+                                    """
+                                ],
+                                "securityContext": {
+                                    "runAsUser": 0,
+                                    "runAsGroup": 0,
+                                    "allowPrivilegeEscalation": True
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "name": "volume-{username}",
+                                        "mountPath": "/home/jovyan"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "high_power": [
+                {
+                    "display_name": "Very Large Instance (Developer)",
+                    "description": "16 CPUs, 120GB RAM | Minimal base + sudo; Build your own environment",
+                    "slug": "dev-very-large",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 13.0,
+                        "cpu_limit": 15.0,
+                        "mem_guarantee": "110G",
+                        "mem_limit": "128G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "very-large"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "very-large",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "karpenter.sh/do-not-disrupt": "true",
+                            "jupyter-profile": "very-large"
+                        },
+                        "environment": {
+                            "JUPYTER_ENABLE_LAB": "yes",
+                            "JUPYTER_ALLOW_INSECURE_WRITES": "1",
+                            "GRANT_SUDO": "yes",
+                            "SUDO_USER": "jovyan",
+                            "CHOWN_HOME": "yes"
+                        },
+                        "allow_privilege_escalation": True,
+                        "init_containers": [
+                            {
+                                "name": "setup-permissions",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "command": ["/bin/bash", "-c"],
+                                "args": [
+                                    """
+                                    set -e
+                                    mkdir -p /home/jovyan/.config /home/jovyan/.jupyter
+                                    cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
+                                    cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
+
+                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+
+                                    echo "Permissions setup complete"
+                                    """
+                                ],
+                                "securityContext": {
+                                    "runAsUser": 0,
+                                    "runAsGroup": 0,
+                                    "allowPrivilegeEscalation": True
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "name": "volume-{username}",
+                                        "mountPath": "/home/jovyan"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "ultra_power": [
+                {
+                    "display_name": "Ultra Large Instance (Developer)",
+                    "description": "32 CPUs, 256GB RAM | Minimal base + sudo; Build your own environment",
+                    "slug": "dev-ultra",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 27.0,
+                        "cpu_limit": 30.0,
+                        "mem_guarantee": "230G",
+                        "mem_limit": "256G",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "storage_capacity": "30Gi",
+                        "node_selector": {
+                            "jupyter-profile": "ultra"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "jupyter-profile",
+                                "operator": "Equal",
+                                "value": "ultra",
+                                "effect": "NoSchedule"
+                            }
+                        ],
+                        "extra_annotations": {
+                            "karpenter.sh/do-not-disrupt": "true",
+                            "jupyter-profile": "ultra"
+                        },
+                        "environment": {
+                            "JUPYTER_ENABLE_LAB": "yes",
+                            "JUPYTER_ALLOW_INSECURE_WRITES": "1",
+                            "GRANT_SUDO": "yes",
+                            "SUDO_USER": "jovyan",
+                            "CHOWN_HOME": "yes"
+                        },
+                        "allow_privilege_escalation": True,
+                        "init_containers": [
+                            {
+                                "name": "setup-permissions",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "command": ["/bin/bash", "-c"],
+                                "args": [
+                                    """
+                                    set -e
+                                    mkdir -p /home/jovyan/.config /home/jovyan/.jupyter
+                                    cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
+                                    cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
+
+                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+
+                                    echo "Permissions setup complete"
+                                    """
+                                ],
+                                "securityContext": {
+                                    "runAsUser": 0,
+                                    "runAsGroup": 0,
+                                    "allowPrivilegeEscalation": True
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "name": "volume-{username}",
+                                        "mountPath": "/home/jovyan"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "gpu": [
+                {
+                    "display_name": "GPU Instance",
+                    "description": "4 CPUs, 16GB RAM, 20GB storage, 1 NVIDIA GPU | Can't be used temporarily",
+                    "slug": "gpu",
+                    "kubespawner_override": {
+                        "cpu_guarantee": 4,
+                        "cpu_limit": 4,
+                        "mem_guarantee": "16G",
+                        "mem_limit": "16G",
+                        "storage_capacity": "30Gi",
+                        "extra_resource_limits": {
+                            "nvidia.com/gpu": "1"
+                        },
+                        "extra_resource_guarantees": {
+                            "nvidia.com/gpu": "1"
+                        },
+                        "tolerations": [
+                            {
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists",
+                                "effect": "NoSchedule"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+
+        # Define group hierarchy and access levels
+        group_access = {
+            "admin": ["base", "medium", "moderate", "power", "high_power", "ultra_power", "gpu"],
+            "gpu-users": ["base", "medium", "moderate", "power", "gpu"],
+            "power-users": ["base", "medium", "moderate", "power", "high_power", "ultra_power"],
+            "moderate-users": ["base", "medium", "moderate"],
+            "regular-users": ["base"]
+        }
+
+        try:
+            # Get user groups from Cognito
+            user_groups = await get_user_groups(self, self.user)
+
+            # Default user type and accessible profiles
+            user_type = "regular-user"
+            accessible_profiles = set(["base"])
+
+            # Check groups in hierarchy order
+            if 'admin' in user_groups:
+                user_type = "admin"
+                accessible_profiles.update(group_access["admin"])
+            elif 'gpu-users' in user_groups:
+                user_type = "gpu-user"
+                accessible_profiles.update(group_access["gpu-users"])
+            elif 'power-users' in user_groups:
+                user_type = "power-user"
+                accessible_profiles.update(group_access["power-users"])
+            elif 'moderate-users' in user_groups:
+                user_type = "moderate-user"
+                accessible_profiles.update(group_access["moderate-users"])
+
+            # Build final profile list
+            self.profile_list = []
+            for profile_type in ["base", "medium", "moderate", "power", "high_power", "ultra_power", "gpu"]:
+                if profile_type in accessible_profiles:
+                    self.profile_list.extend(profiles_config[profile_type])
+
+            self.log.info(f"User {self.user.name} ({user_type}) has access to: {list(accessible_profiles)}")
+
+            self.extra_labels = {
+                "user-type": user_type,
+                "cognito-groups": "-".join(user_groups),
+                "accessible-profiles": "-".join(sorted(accessible_profiles))
+            }
+
+            return self._options_form_default()
+
+        except Exception as e:
+            self.log.error(f"Error in custom_options_form for {self.user.name}: {e}")
+            # Fallback to base profiles if there's an error
+            self.profile_list = profiles_config["base"]
+            return self._options_form_default()
+
+    c.Spawner.debug = True
+    c.JupyterHub.log_level = "DEBUG"
+    c.LocalProcessSpawner.debug = True
+
+    # Cookie valid for 30 days (matches cognito refresh token)
+    c.JupyterHub.cookie_max_age_days = 30
+    c.JupyterHub.tornado_settings["cookie_options"] = dict(expires_days=30)
+
+    # Add more timeout for all spawners
+    c.KubeSpawner.start_timeout = 300
+    c.KubeSpawner.http_timeout = 60
+
+    # Override options_form
+    c.KubeSpawner.options_form = custom_options_form
