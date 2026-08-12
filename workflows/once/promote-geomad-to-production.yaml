@@ -1,0 +1,191 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: promote-geomad-
+  namespace: argo-workflows
+spec:
+  entrypoint: promote
+  serviceAccountName: argo-workflows-executor
+  parallelism: 8
+  podGC:
+    strategy: OnWorkflowSuccess
+
+  arguments:
+    parameters:
+      - name: source-bucket
+        value: piksel-staging-public-data
+      - name: dest-bucket
+        value: piksel-production-public-data
+      - name: prefix
+        value: geomad_s2/1.0.0/
+
+  templates:
+    - name: promote
+      steps:
+        - - name: list-tiles
+            template: list-tiles
+        - - name: promote-tile
+            template: promote-tile
+            withParam: "{{steps.list-tiles.outputs.result}}"
+            arguments:
+              parameters:
+                - name: tile-prefix
+                  value: "{{item}}"
+
+    - name: list-tiles
+      script:
+        image: public.ecr.aws/docker/library/python:3.12-slim
+        command: [python]
+        env:
+          - name: SOURCE_BUCKET
+            value: "{{workflow.parameters.source-bucket}}"
+          - name: PREFIX
+            value: "{{workflow.parameters.prefix}}"
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+        source: |
+          import json
+          import os
+          import subprocess
+          import sys
+
+          subprocess.run(
+              [sys.executable, "-m", "pip", "install", "--quiet", "boto3"],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+              check=True,
+          )
+          import boto3
+
+          s3 = boto3.client("s3", region_name="ap-southeast-3")
+          paginator = s3.get_paginator("list_objects_v2")
+
+          tile_prefixes = []
+          for page in paginator.paginate(
+              Bucket=os.environ["SOURCE_BUCKET"],
+              Prefix=os.environ["PREFIX"],
+              Delimiter="/",
+          ):
+              for common_prefix in page.get("CommonPrefixes", []):
+                  tile_prefixes.append(common_prefix["Prefix"])
+
+          json.dump(tile_prefixes, sys.stdout)
+
+    - name: promote-tile
+      inputs:
+        parameters:
+          - name: tile-prefix
+      script:
+        image: public.ecr.aws/docker/library/python:3.12-slim
+        command: [python]
+        env:
+          - name: SOURCE_BUCKET
+            value: "{{workflow.parameters.source-bucket}}"
+          - name: DEST_BUCKET
+            value: "{{workflow.parameters.dest-bucket}}"
+          - name: TILE_PREFIX
+            value: "{{inputs.parameters.tile-prefix}}"
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 500m
+          limits:
+            memory: 1Gi
+            cpu: "1"
+        source: |
+          import concurrent.futures
+          import json
+          import os
+          import subprocess
+          import sys
+
+          subprocess.run(
+              [sys.executable, "-m", "pip", "install", "--quiet", "boto3"],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+              check=True,
+          )
+          import boto3
+          from boto3.s3.transfer import TransferConfig
+
+          SOURCE_BUCKET = os.environ["SOURCE_BUCKET"]
+          DEST_BUCKET = os.environ["DEST_BUCKET"]
+          TILE_PREFIX = os.environ["TILE_PREFIX"]
+
+          s3 = boto3.client("s3", region_name="ap-southeast-3")
+          server_side_copy = TransferConfig(use_threads=False)
+
+
+          def rewrite_stac_item(raw_bytes):
+              document = json.loads(raw_bytes)
+              repointed = json.dumps(document).replace(SOURCE_BUCKET, DEST_BUCKET)
+              document = json.loads(repointed)
+              document["links"] = [
+                  link
+                  for link in document.get("links", [])
+                  if link.get("rel") != "product_overview"
+              ]
+              return json.dumps(document, indent=2).encode("utf-8")
+
+
+          def is_already_copied(key, expected_size):
+              try:
+                  head = s3.head_object(Bucket=DEST_BUCKET, Key=key)
+                  return head["ContentLength"] == expected_size
+              except s3.exceptions.ClientError:
+                  return False
+
+
+          def promote_object(source_object):
+              key = source_object["Key"]
+              size = source_object["Size"]
+
+              if key.endswith(".json"):
+                  body = s3.get_object(Bucket=SOURCE_BUCKET, Key=key)["Body"].read()
+                  s3.put_object(
+                      Bucket=DEST_BUCKET,
+                      Key=key,
+                      Body=rewrite_stac_item(body),
+                      ContentType="application/json",
+                  )
+                  return "rewritten"
+
+              if is_already_copied(key, size):
+                  return "skipped"
+
+              s3.copy(
+                  CopySource={"Bucket": SOURCE_BUCKET, "Key": key},
+                  Bucket=DEST_BUCKET,
+                  Key=key,
+                  Config=server_side_copy,
+              )
+              return "copied"
+
+
+          def list_source_objects():
+              paginator = s3.get_paginator("list_objects_v2")
+              for page in paginator.paginate(Bucket=SOURCE_BUCKET, Prefix=TILE_PREFIX):
+                  for source_object in page.get("Contents", []):
+                      yield source_object
+
+
+          print(f"Promoting {SOURCE_BUCKET}/{TILE_PREFIX} -> {DEST_BUCKET}/{TILE_PREFIX}")
+
+          objects = list(list_source_objects())
+          print(f"  {len(objects)} objects found")
+
+          counts = {"copied": 0, "rewritten": 0, "skipped": 0}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+              for outcome in pool.map(promote_object, objects):
+                  counts[outcome] += 1
+
+          print(
+              f"  done: {counts['copied']} copied, "
+              f"{counts['rewritten']} STAC items rewritten, "
+              f"{counts['skipped']} already present"
+          )
