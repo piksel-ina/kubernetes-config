@@ -6,3 +6,4 @@ data:
   settings.env.py: |
     CUBEDASH_THEME = "deindonesia"
     CUBEDASH_DEFAULT_TIMEZONE = "Asia/Jakarta"
+    CUBEDASH_DATA_S3_REGION = "ap-southeast-3"
