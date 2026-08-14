@@ -28,6 +28,8 @@ spec:
         value: "true"
       - name: rename-product
         value: "s2_geomad_annual"
+      - name: overwrite
+        value: "false"
   templates:
     - name: s3-indexing
       inputs:
@@ -42,6 +44,8 @@ spec:
             value: "{{workflow.parameters.no-sign-request}}"
           - name: rename-product
             value: "{{workflow.parameters.rename-product}}"
+          - name: overwrite
+            value: "{{workflow.parameters.overwrite}}"
       container:
         name: odc
         image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
@@ -52,6 +56,10 @@ spec:
 
             if [ "{{inputs.parameters.no-sign-request}}" = "true" ]; then
               CMD="$CMD --no-sign-request"
+            fi
+
+            if [ "{{inputs.parameters.overwrite}}" = "true" ]; then
+              CMD="$CMD --update-if-exists"
             fi
 
             if [ -n "{{inputs.parameters.rename-product}}" ] && [ "{{inputs.parameters.rename-product}}" != "" ]; then
