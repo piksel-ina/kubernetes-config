@@ -52,7 +52,7 @@ spec:
         command: [bash, -c]
         args:
           - |
-            CMD="s3-to-dc --stac"
+            CMD="s3-to-dc --stac --allow-unsafe"
 
             if [ "{{inputs.parameters.no-sign-request}}" = "true" ]; then
               CMD="$CMD --no-sign-request"
