@@ -11,6 +11,15 @@ spec:
       config:
         GenericOAuthenticator:
           oauth_callback_url: "https://sandbox.piksel.big.go.id/hub/oauth_callback"
+    # EKS control plane on production is v1.36. The z2jh 4.1.0 chart pins the
+    # user-scheduler to kube-scheduler v1.30.8, which is outside the supported
+    # kube-scheduler <-> kube-apiserver skew (±3 minor). The stale scheduler
+    # fails to place singleuser pods without emitting Unschedulable=True, so
+    # Karpenter never provisions a jupyter-standard node and spawns time out.
+    scheduling:
+      userScheduler:
+        image:
+          tag: "v1.36.2"
   valuesFrom:
     - kind: Secret
       name: jupyterhub
