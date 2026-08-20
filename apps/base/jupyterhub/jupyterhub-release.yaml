@@ -80,7 +80,7 @@ spec:
         pullPolicy: "Always"
 
       # Start with JupyterLab
-      defaultUrl: "/lab/tree/notebooks/README.md"
+      defaultUrl: "/lab/tree/inadc-jupyter/notebooks/README.md"
 
       #  Run bash script define in singleuser.yaml
       lifecycleHooks:

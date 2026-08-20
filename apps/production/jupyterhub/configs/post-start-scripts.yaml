@@ -21,7 +21,7 @@ data:
     # Configuration variables
     GITHUB_REPO="${GITHUB_REPO:-https://github.com/piksel-ina/inadc-jupyter.git}"
     BRANCH="${BRANCH:-main}"
-    TARGET_DIR="${TARGET_DIR:-/home/jovyan/notebooks}"
+    TARGET_DIR="${TARGET_DIR:-/home/jovyan/inadc-jupyter}"
 
     # --- Step 2 - Quickfix to common environment issues --
 
