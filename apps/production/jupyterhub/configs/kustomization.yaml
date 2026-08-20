@@ -5,4 +5,5 @@ resources:
   - profiles-config.yaml
   - post-start-scripts.yaml
   - efs-mount.yaml
+  - efs-pvcs.yaml
   - user-scheduler-rbac.yaml
