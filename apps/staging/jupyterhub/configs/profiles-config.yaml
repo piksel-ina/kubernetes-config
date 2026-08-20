@@ -49,7 +49,7 @@ data:
                         "cpu_limit": 3.0,
                         "mem_guarantee": "13G",
                         "mem_limit": "16G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:jupyter-lab-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "standard"
@@ -79,7 +79,7 @@ data:
                         "cpu_limit": 3.5,
                         "mem_guarantee": "26G",
                         "mem_limit": "30G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-lab:jupyter-lab-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "medium"
@@ -109,7 +109,7 @@ data:
                         "cpu_limit": 3.2,
                         "mem_guarantee": "26G",
                         "mem_limit": "32G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "medium"
@@ -136,7 +136,7 @@ data:
                         "init_containers": [
                             {
                                 "name": "setup-permissions",
-                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                                 "command": ["/bin/bash", "-c"],
                                 "args": [
                                     """
@@ -176,7 +176,7 @@ data:
                         "cpu_limit": 7.0,
                         "mem_guarantee": "55G",
                         "mem_limit": "64G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "large"
@@ -204,7 +204,7 @@ data:
                         "init_containers": [
                             {
                                 "name": "setup-permissions",
-                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                                 "command": ["/bin/bash", "-c"],
                                 "args": [
                                     """
@@ -244,7 +244,7 @@ data:
                         "cpu_limit": 15.0,
                         "mem_guarantee": "110G",
                         "mem_limit": "128G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "very-large"
@@ -272,7 +272,7 @@ data:
                         "init_containers": [
                             {
                                 "name": "setup-permissions",
-                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                                 "command": ["/bin/bash", "-c"],
                                 "args": [
                                     """
@@ -312,7 +312,7 @@ data:
                         "cpu_limit": 30.0,
                         "mem_guarantee": "230G",
                         "mem_limit": "256G",
-                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                        "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                         "storage_capacity": "30Gi",
                         "node_selector": {
                             "jupyter-profile": "ultra"
@@ -340,7 +340,7 @@ data:
                         "init_containers": [
                             {
                                 "name": "setup-permissions",
-                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:v20260522-0853",
+                                "image": "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/jupyter-dev:dev-jupyter-v20260820-0940",
                                 "command": ["/bin/bash", "-c"],
                                 "args": [
                                     """
