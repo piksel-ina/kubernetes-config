@@ -19,10 +19,9 @@ data:
     log "Running post-start hook"
 
     # Configuration variables
-    GITHUB_REPO="${GITHUB_REPO:-https://github.com/piksel-ina/piksel-notebooks.git}"
+    GITHUB_REPO="${GITHUB_REPO:-https://github.com/piksel-ina/inadc-jupyter.git}"
     BRANCH="${BRANCH:-main}"
     TARGET_DIR="${TARGET_DIR:-/home/jovyan/notebooks}"
-    CONDA_ENV="${CONDA_ENV:-notebook}"
 
     # --- Step 2 - Quickfix to common environment issues --
 
@@ -45,20 +44,16 @@ data:
 
     # --- Step 3 - Sync Notebooks ---
 
-    # Sync with gitpuller (attempt 1)
+    # Sync with gitpuller
     log "Syncing notebooks from ${GITHUB_REPO}"
-    if /srv/conda/envs/${CONDA_ENV}/bin/gitpuller "${GITHUB_REPO}" "${BRANCH}" "${TARGET_DIR}" 2>/dev/null; then
-      log "Successfully synced notebooks to ${TARGET_DIR}"
-    else
-      log "Warning: Failed to sync repository [1]"
-
-      # Sync with gitpuller (attempt 2)
-      log "Trying alternative gitpuller path"
-      if /opt/conda/bin/gitpuller "${GITHUB_REPO}" "${BRANCH}" "${TARGET_DIR}" 2>/dev/null; then
+    if command -v gitpuller >/dev/null 2>&1; then
+      if gitpuller "${GITHUB_REPO}" "${BRANCH}" "${TARGET_DIR}"; then
         log "Successfully synced notebooks to ${TARGET_DIR}"
       else
-        log "Warning: Failed to sync repository [2]"
+        log "Warning: gitpuller failed to sync notebooks"
       fi
+    else
+      log "Warning: gitpuller is not available on PATH"
     fi
 
     # --- Step 4 - Update JupyterLab settings ---
