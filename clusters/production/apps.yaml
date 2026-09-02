@@ -52,6 +52,23 @@ spec:
   wait: true
   timeout: 5m0s
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cron-jobs
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: argo-workflows
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./workflows/cronwf
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
 # Datacube Explorer
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
