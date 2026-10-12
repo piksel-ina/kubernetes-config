@@ -364,23 +364,6 @@
     "items": [
       {
         "item": {
-          "id": "basemap-carto-voyager",
-          "name": "Peta Dasar (CARTO)",
-          "type": "open-street-map",
-          "url": "https://basemaps.cartocdn.com/rastertiles/voyager_labels_under/",
-          "subdomains": [
-            "a",
-            "b",
-            "c",
-            "d"
-          ],
-          "attribution": "© OpenStreetMap, © CARTO",
-          "opacity": 1.0
-        },
-        "image": "images/basemaps/indo-carto.png"
-      },
-      {
-        "item": {
           "id": "basemap-openstreetmap",
           "name": "OpenStreetMap",
           "type": "open-street-map",
@@ -414,12 +397,11 @@
       }
     ],
     "enabledBaseMaps": [
-      "basemap-carto-voyager",
       "basemap-openstreetmap",
       "basemap-esri-world-imagery",
       "basemap-rbi"
     ],
-    "defaultBaseMapId": "basemap-carto-voyager",
-    "previewBaseMapId": "basemap-carto-voyager"
+    "defaultBaseMapId": "basemap-openstreetmap",
+    "previewBaseMapId": "basemap-openstreetmap"
   }
 }
