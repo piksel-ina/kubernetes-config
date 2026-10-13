@@ -14,6 +14,13 @@ configMapGenerator:
         app: terria
     files:
       - simple.json
+  - name: terria-server-config
+    behavior: merge
+    options:
+      labels:
+        app: terria
+    files:
+      - serverconfig.json
 
 images:
   - name: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/terriamap
