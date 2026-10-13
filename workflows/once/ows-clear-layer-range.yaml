@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ows-clear-layer-range-
+  namespace: argo-workflows
+spec:
+  entrypoint: ows-clear-layer-range
+  serviceAccountName: argo-workflows-executor
+  ttlStrategy:
+    secondsAfterCompletion: 86400
+  podGC:
+    strategy: OnWorkflowSuccess
+
+  # Removes one layer's row from ows.layer_ranges so the next ows-update
+  # rebuilds it. Use when an interrupted ows-update leaves a partial row.
+  arguments:
+    parameters:
+      - name: layer
+
+  templates:
+    - name: ows-clear-layer-range
+      inputs:
+        parameters:
+          - name: layer
+      script:
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20261012-0935
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+        command: [python]
+        source: |
+          import os
+          import psycopg2
+
+          layer = "{{inputs.parameters.layer}}"
+          conn = psycopg2.connect(
+              host=os.environ["ODC_DEFAULT_DB_HOSTNAME"],
+              port=os.environ["ODC_DEFAULT_DB_PORT"],
+              dbname=os.environ["ODC_DEFAULT_DB_DATABASE"],
+              user=os.environ["ODC_DEFAULT_DB_USERNAME"],
+              password=os.environ["ODC_DEFAULT_DB_PASSWORD"],
+          )
+          with conn, conn.cursor() as cur:
+              cur.execute(
+                  "SELECT layer, left(bboxes::text, 80) FROM ows.layer_ranges WHERE layer = %s",
+                  (layer,),
+              )
+              print("before:", cur.fetchall())
+              cur.execute("DELETE FROM ows.layer_ranges WHERE layer = %s", (layer,))
+              print("deleted rows:", cur.rowcount)
+              if cur.rowcount > 1:
+                  raise SystemExit("refusing to delete more than one row")
+          conn.close()
+        env:
+          - name: ODC_DEFAULT_DB_HOSTNAME
+            value: "pg-proxy-service.database.svc.cluster.local"
+          - name: ODC_DEFAULT_DB_PORT
+            value: "6432"
+          - name: ODC_DEFAULT_DB_DATABASE
+            value: odc_index
+          - name: ODC_DEFAULT_DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: odc
+                key: username
+          - name: ODC_DEFAULT_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: odc
+                key: password
