@@ -15,7 +15,7 @@ spec:
   templates:
     - name: ows-initialization
       script:
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20260518-1130
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20261012-0935
         resources:
           requests:
             memory: 8Gi
