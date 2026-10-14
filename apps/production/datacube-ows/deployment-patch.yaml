@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datacube-ows
+  namespace: open-datacube
+spec:
+  template:
+    spec:
+      containers:
+        - name: datacube-ows
+          env:
+            - name: OWS_ALLOWED_URLS
+              value: "https://ows.piksel.big.go.id,https://ows-uncached.piksel.big.go.id"
