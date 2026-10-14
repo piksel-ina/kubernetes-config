@@ -6,6 +6,9 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-production
     external-dns.alpha.kubernetes.io/hostname: ows-uncached.staging.piksel.big.go.id
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: ows-origin-auth  # pragma: allowlist secret
+    nginx.ingress.kubernetes.io/auth-realm: "CloudFront origin"
     nginx.ingress.kubernetes.io/use-forwarded-headers: "false"
     nginx.ingress.kubernetes.io/compute-full-forwarded-for: "false"
     nginx.ingress.kubernetes.io/preserve-host: "false"
