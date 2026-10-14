@@ -5,6 +5,7 @@ namespace: terria
 
 resources:
   - ../../base/terria
+  - ingress.yaml
 
 configMapGenerator:
   - name: terria-client-config
