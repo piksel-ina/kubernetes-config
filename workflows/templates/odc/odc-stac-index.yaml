@@ -18,7 +18,6 @@ spec:
   arguments:
     parameters:
       - name: catalog
-        value: "https://stac.staging.example.com"
       - name: arguments
         value: "--rename-product=s2_l2a"
       - name: bbox
