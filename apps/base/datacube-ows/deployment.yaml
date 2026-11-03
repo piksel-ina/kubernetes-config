@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: datacube-ows
   namespace: open-datacube
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: Merge
   labels:
     app: datacube-ows
     component: web-service
