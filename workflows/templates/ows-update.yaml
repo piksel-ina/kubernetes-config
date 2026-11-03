@@ -17,7 +17,7 @@ spec:
       - name: products
         value: "s2_geomad_annual_spectral"
       - name: ows-image
-        value: "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20261012-0935"
+        value: "686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows:v20261014-1427"
 
   templates:
     - name: ows-update
@@ -30,10 +30,10 @@ spec:
         image: "{{inputs.parameters.ows-image}}"
         resources:
           requests:
-            memory: 8Gi
+            memory: 14Gi
             cpu: 2000m
           limits:
-            memory: 12Gi
+            memory: 18Gi
             cpu: 4000m
 
         command: [bash]
@@ -50,15 +50,13 @@ spec:
           ls -lah /env/config/ows_config/
 
           echo "Updating ows ranges"
-          for product in "{{inputs.parameters.products}}"; do
-              if [ $product == "--all" ]; then
-                  echo "Updating all"
-                  datacube-ows-update
-              else
-                  echo "Updating $product"
-                  datacube-ows-update $product
-              fi
-          done
+          if [ "{{inputs.parameters.products}}" == "--all" ]; then
+              echo "Updating all"
+              datacube-ows-update
+          else
+              echo "Updating {{inputs.parameters.products}}"
+              datacube-ows-update {{inputs.parameters.products}}
+          fi
 
           echo ""
           echo "=== Product Update Complete! ==="
@@ -86,3 +84,19 @@ spec:
             value: "ap-southeast-3"
           - name: AWS_REGION
             value: "ap-southeast-3"
+
+    - name: restart-ows
+      resource:
+        action: patch
+        mergeStrategy: merge
+        manifest: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: datacube-ows
+            namespace: open-datacube
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{workflow.creationTimestamp}}"

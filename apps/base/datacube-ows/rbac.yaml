@@ -1,0 +1,23 @@
+# Lets the daily indexing workflow restart OWS so pods reload cached layer ranges.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: datacube-ows-restarter
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["datacube-ows"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: datacube-ows-restarter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: datacube-ows-restarter
+subjects:
+  - kind: ServiceAccount
+    name: argo-workflows-executor
+    namespace: argo-workflows
