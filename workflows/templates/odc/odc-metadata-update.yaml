@@ -19,12 +19,12 @@ spec:
     - name: metadata-update
       container:
         name: odc
-        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-core:v20260522-0553
+        image: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-odc:v20261109-1538
         command: [bash, -c]
         args:
           - |
             datacube --version
-            datacube metadata update --allow-unsafe https://raw.githubusercontent.com/piksel-ina/piksel-core/main/metadata/custom_metadata.odc-type.yaml
+            datacube metadata update --allow-unsafe https://raw.githubusercontent.com/piksel-ina/inadc-odc/main/metadata/custom_metadata.odc-type.yaml
         env:
           - name: ODC_DEFAULT_DB_HOSTNAME
             value: "pg-proxy-service.database.svc.cluster.local"
