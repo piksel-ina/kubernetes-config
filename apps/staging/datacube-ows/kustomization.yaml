@@ -10,3 +10,21 @@ resources:
 images:
   - name: 686410905891.dkr.ecr.ap-southeast-3.amazonaws.com/inadc-ows
     newTag: v20261014-1427
+
+patches:
+  - target:
+      kind: Deployment
+      name: datacube-ows
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: datacube-ows-hpa
+    patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: datacube-ows-hpa
