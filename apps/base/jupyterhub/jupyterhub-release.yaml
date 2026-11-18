@@ -118,6 +118,7 @@ spec:
       extraEnv:
         # // Jupyter Environments
         # JUPYTER_TRUST_XHEADERS: "true"
+        JUPYTER_SHOW_HIDDEN: "true"
         # // AWS Configuration
         AWS_NO_SIGN_REQUEST: "YES"
         # // GDAL / Rasterio environment variables
