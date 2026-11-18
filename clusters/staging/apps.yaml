@@ -1,4 +1,22 @@
 # --- Applications Kustomization for the staging cluster ---
+# jupyterhub
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
+kind: Kustomization
+metadata:
+  name: jhub
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-configs
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/staging/jupyterhub
+  prune: true
+  wait: true
+  timeout: 5m0s
+---
 # argo-workflows
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
