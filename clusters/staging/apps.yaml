@@ -1,22 +1,4 @@
 # --- Applications Kustomization for the staging cluster ---
-# jupyterhub
-apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-kind: Kustomization
-metadata:
-  name: jhub
-  namespace: flux-system
-spec:
-  interval: 1m0s
-  dependsOn:
-    - name: infra-configs
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/jupyterhub
-  prune: true
-  wait: true
-  timeout: 5m0s
----
 # argo-workflows
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
@@ -35,25 +17,7 @@ spec:
   wait: true
   timeout: 5m0s
 ---
-# Datacube Explorer
-apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-kind: Kustomization
-metadata:
-  name: explorer
-  namespace: flux-system
-spec:
-  interval: 1m0s
-  dependsOn:
-    - name: infra-configs
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/datacube-explorer
-  prune: true
-  wait: true
-  timeout: 5m0s
----
-# OWS
+# OWS (scaled to 0; kept for daily-satellite-orchestrator restart-ows step)
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
 metadata:
@@ -67,40 +31,6 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./apps/staging/datacube-ows
-  prune: true
-  wait: true
-  timeout: 5m0s
----
-# Terria
-apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-kind: Kustomization
-metadata:
-  name: terria
-  namespace: flux-system
-spec:
-  interval: 1m0s
-  # dependsOn:
-  #   - name: infra-configs
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/terria
-  prune: true
-  wait: true
-  timeout: 5m0s
----
-# Tileserver
-apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-kind: Kustomization
-metadata:
-  name: tileserver
-  namespace: flux-system
-spec:
-  interval: 1m0s
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/tileserver
   prune: true
   wait: true
   timeout: 5m0s
@@ -140,21 +70,4 @@ spec:
   path: ./workflows/cronwf
   prune: true
   wait: true
-  timeout: 5m0s
----
-# Monitoring
-apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-kind: Kustomization
-metadata:
-  name: monitoring
-  namespace: flux-system
-spec:
-  interval: 10m
-  dependsOn:
-    - name: infra-configs
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/monitoring
-  prune: true
   timeout: 5m0s
