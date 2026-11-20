@@ -145,7 +145,7 @@ data:
                                     cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
                                     cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
 
-                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+                                    find /home/jovyan -xdev \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
 
                                     echo "Permissions setup complete"
                                     """
@@ -213,7 +213,7 @@ data:
                                     cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
                                     cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
 
-                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+                                    find /home/jovyan -xdev \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
 
                                     echo "Permissions setup complete"
                                     """
@@ -281,7 +281,7 @@ data:
                                     cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
                                     cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
 
-                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+                                    find /home/jovyan -xdev \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
 
                                     echo "Permissions setup complete"
                                     """
@@ -349,7 +349,7 @@ data:
                                     cp -f /etc/skel/.bashrc /home/jovyan/.bashrc || true
                                     cp -f /etc/skel/.config/starship.toml /home/jovyan/.config/starship.toml || true
 
-                                    find /home/jovyan \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
+                                    find /home/jovyan -xdev \\( ! -user 1000 -o ! -group 100 \\) -exec chown 1000:100 {{}} + 2>/dev/null || true
 
                                     echo "Permissions setup complete"
                                     """
@@ -452,16 +452,19 @@ data:
             self.profile_list = profiles_config["base"]
             return self._options_form_default()
 
-    c.Spawner.debug = True
-    c.JupyterHub.log_level = "DEBUG"
-    c.LocalProcessSpawner.debug = True
+    c.Spawner.debug = False
+    c.JupyterHub.log_level = "INFO"
+    c.LocalProcessSpawner.debug = False
 
     # Cookie valid for 30 days (matches cognito refresh token)
     c.JupyterHub.cookie_max_age_days = 30
     c.JupyterHub.tornado_settings["cookie_options"] = dict(expires_days=30)
 
+    # Prevent hub self-restart during concurrent cold-start bursts
+    c.JupyterHub.consecutive_failure_limit = 0
+
     # Add more timeout for all spawners
-    c.KubeSpawner.start_timeout = 300
+    c.KubeSpawner.start_timeout = 600
     c.KubeSpawner.http_timeout = 60
 
     # Override options_form
